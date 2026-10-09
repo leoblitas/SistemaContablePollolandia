@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Estados Financieros – Pollolandia R.L.</title>
+<style>
+:root{--bg:#f6f4ee;--card:#fff;--tx:#1f2a24;--mut:#5d6b63;--ac:#2f6b3f;--bd:#dcd8cb;--er:#b42318}
+@media(prefers-color-scheme:dark){:root{--bg:#141a16;--card:#1d2620;--tx:#e8ede9;--mut:#9fb0a5;--ac:#6fbf86;--bd:#2f3c34;--er:#f1867b}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,Segoe UI,Roboto,sans-serif}
+.w{max-width:860px;margin:auto;padding:1.2rem}a{color:var(--ac)}h1{margin:.3rem 0;font-size:1.5rem}.mut{color:var(--mut)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:1rem 1.2rem;margin:1rem 0}
+input,button{font:inherit;padding:.45rem .6rem;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx)}button{cursor:pointer}
+.bar{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center}.tabs button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.ttl{text-align:center;margin:.2rem 0 1rem}.ttl b{display:block;font-size:1.1rem}table{width:100%;border-collapse:collapse}
+td{padding:.25rem .4rem}td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;width:130px}
+.g td{font-weight:700;padding-top:.7rem;color:var(--ac)}.s td:first-child{padding-left:1rem;font-weight:600}.a td:first-child{padding-left:2rem}.a td{font-size:.93rem}
+.t td{font-weight:700;border-top:1px solid var(--bd)}.T td{font-weight:700;border-top:2px solid var(--tx);border-bottom:3px double var(--tx)}
+.ok{color:var(--ac)}.bad{color:var(--er)}.warn{background:var(--bg);border:1px dashed var(--bd);border-radius:8px;padding:.5rem .8rem;margin:.6rem 0;font-size:.88rem}
+@media print{.noprint{display:none}.card{border:none}}
+</style></head><body><div class="w">
+<a href="index.html" class="noprint">← Volver al sistema</a>
+<h1>Estados Financieros</h1>
+<p class="mut">Generados automáticamente desde el Libro Diario de este navegador.</p>
+<div class="card noprint"><div class="bar tabs"><button data-v="b" class="on">Balance General</button><button data-v="r">Estado de Resultados</button></div>
+<div class="bar" style="margin-top:.6rem">Desde <input type="date" id="d1"> Hasta <input type="date" id="d2"> <label><input type="checkbox" id="z"> mostrar cuentas en cero</label> <button onclick="print()">Imprimir</button></div></div>
+<div class="card" id="out"></div>
+<p class="mut">Módulo 4 · Versión 0.5 · Pendientes: Estado de Flujo de Efectivo y Estado de Evolución del Patrimonio. Estados en bolivianos, sin reexpresión por inflación (NC 3).</p>
+</div>
+<script src="datos-plan.js"></script>
+<script>
+const KEY='pollolandia_diario_v1',$=id=>document.getElementById(id);
+let E=[];try{E=JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){}
+const esc=s=>String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+const f2=n=>Math.abs(n)<0.005?'0.00':(n<0?'(':'')+Math.abs(n).toLocaleString('es-BO',{minimumFractionDigits:2,maximumFractionDigits:2})+(n<0?')':'');
+const fd=s=>{const [y,m,d]=s.split('-');return `${d}/${m}/${y}`};
+let V='b';
+const ys=E.map(e=>e.f.slice(0,4)).sort();const yr=ys.length?ys[ys.length-1]:String(new Date().getFullYear());
+$('d1').value=yr+'-01-01';$('d2').value=E.length?E.map(e=>e.f).sort().pop():new Date().toISOString().slice(0,10);
+function bal(upto,from){const B={};E.forEach(e=>{if(e.f>upto||(from&&e.f<from))return;e.l.forEach(l=>{const b=l.c.split('-')[0];const o=B[b]=B[b]||{d:0,h:0};o.d+=l.d||0;o.h+=l.h||0})});return B}
+// orient: 'd' = débito-positivo, 'h' = crédito-positivo
+const val=(B,b,o)=>{const x=B[b]||{d:0,h:0};return o=='d'?x.d-x.h:x.h-x.d};
+const accs=pre=>Object.keys(NAT).concat(Object.keys(SC)).filter(c=>c.startsWith(pre)).sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+function sec(B,pre,o,title,rows){const z=$('z').checked;let tot=0,h='';
+ const subs={};accs(pre).forEach(c=>{const v=val(B,c,o);tot+=v;if(!z&&Math.abs(v)<0.005)return;const g=c.split('.').slice(0,3).join('.');(subs[g]=subs[g]||[]).push([c,v])});
+ Object.keys(subs).forEach(g=>{h+=`<tr class="s"><td colspan="2">${esc(NAMES[g]||g)}</td></tr>`+subs[g].map(([c,v])=>`<tr class="a"><td>${c} ${esc(NAMES[c]||c)}</td><td class="n">${f2(v)}</td></tr>`).join('')});
+ return {tot,html:(title?`<tr class="g"><td colspan="2">${title}</td></tr>`:'')+h};}
+const row=(t,v,c)=>`<tr class="${c}"><td>${t}</td><td class="n">${f2(v)}</td></tr>`;
+function ER(B){const ing=sec(B,'5.1','h'),cvt=sec(B,'6.1.02','d'),adm=sec(B,'7.1','d'),oi=sec(B,'5.2','h'),fin=sec(B,'7.2','d'),aj=sec(B,'8.2','h');
+ const bruta=ing.tot-cvt.tot,res=bruta-adm.tot+oi.tot-fin.tot+aj.tot;
+ return {res,html:`<tr class="g"><td colspan="2">INGRESOS OPERATIVOS</td></tr>${ing.html}${row('Ventas netas',ing.tot,'t')}
+ <tr class="g"><td colspan="2">(–) COSTO DE VENTAS</td></tr>${cvt.html}${row('Total costo de ventas',cvt.tot,'t')}${row('UTILIDAD BRUTA',bruta,'t')}
+ <tr class="g"><td colspan="2">(–) GASTOS OPERATIVOS</td></tr>${adm.html}${row('Total gastos administrativos y de comercialización',adm.tot,'t')}
+ <tr class="g"><td colspan="2">(+) INGRESOS NO OPERATIVOS</td></tr>${oi.html}${row('Total ingresos no operativos',oi.tot,'t')}
+ <tr class="g"><td colspan="2">(–) GASTOS FINANCIEROS Y EXTRAORDINARIOS</td></tr>${fin.html}${row('Total gastos financieros y extraordinarios',fin.tot,'t')}
+ ${aj.tot||$('z').checked?`<tr class="g"><td colspan="2">(+/–) AJUSTES Y REEXPRESIONES</td></tr>${aj.html}`:''}
+ ${row(res>=0?'EXCEDENTE DEL PERÍODO':'DÉFICIT DEL PERÍODO',res,'T')}`}}
+function draw(){
+ const a=$('d1').value,z=$('d2').value;if(!E.length){$('out').innerHTML='<p class="mut">No hay asientos registrados. Registra asientos en el Libro Diario para emitir los estados.</p>';return}
+ const hd=t=>`<div class="ttl"><b>COOPERATIVA AGROPECUARIA POLLOLANDIA R.L.</b><b>${t}</b><span class="mut">${V=='r'?`Del ${fd(a)} al ${fd(z)}`:`Al ${fd(z)}`} · (Expresado en bolivianos)</span></div>`;
+ if(V=='r'){const r=ER(bal(z,a));$('out').innerHTML=hd('ESTADO DE RESULTADOS')+`<table>${r.html}</table>`;return}
+ const B=bal(z),acc=bal(z);
+ const ac=sec(B,'1.1','d'),ac4=sec(B,'4.1','d'),pp=sec(B,'6.1.01','d'),anc=sec(B,'1.2','d'),anc4=sec(B,'4.2','d');
+ const act=ac.tot+ac4.tot+pp.tot+anc.tot+anc4.tot;
+ const pc=sec(B,'2.1','h'),pnc=sec(B,'2.2','h'),pat=sec(B,'3','h'),pat4=sec(B,'4.3','h');
+ // resultado acumulado no cerrado: cuentas de resultado hasta la fecha
+ const rs=ER(bal(z)).res;const rsd=Math.abs(rs)>=0.005;
+ const pas=pc.tot+pnc.tot,patt=pat.tot+pat4.tot+rs,tot=pas+patt,dif=act-tot,ok=Math.abs(dif)<0.005;
+ const open=v=>`<tr class="g"><td colspan="2">${v}</td></tr>`;
+ $('out').innerHTML=hd('BALANCE GENERAL')+`<table>
+ ${open('ACTIVO')}${ac.html}${ac4.html}${pp.tot||$('z').checked?`<tr class="s"><td colspan="2">Producción en proceso (centros de costo)</td></tr>${pp.html.replace(/<tr class="a">/g,'<tr class="a">')}`:''}${row('Total activo corriente',ac.tot+ac4.tot+pp.tot,'t')}
+ ${anc.html}${anc4.html}${row('Total activo no corriente',anc.tot+anc4.tot,'t')}${row('TOTAL ACTIVO',act,'T')}
+ ${open('PASIVO')}${pc.html}${row('Total pasivo corriente',pc.tot,'t')}${pnc.html}${row('Total pasivo no corriente',pnc.tot,'t')}${row('TOTAL PASIVO',pas,'t')}
+ ${open('PATRIMONIO')}${pat.html}${pat4.html}${rsd?`<tr class="s"><td>${rs>=0?'Excedente':'Déficit'} acumulado a la fecha (cuentas de resultado sin cerrar)</td><td class="n">${f2(rs)}</td></tr>`:''}${row('TOTAL PATRIMONIO',patt,'t')}${row('TOTAL PASIVO Y PATRIMONIO',tot,'T')}</table>
+ <div class="warn">Verificación: Activo – (Pasivo + Patrimonio) = <b class="${ok?'ok':'bad'}">${f2(dif)} ${ok?'✔ el balance cuadra':'✘ no cuadra: revisa los asientos'}</b></div>`}
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{V=b.dataset.v;document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x==b));draw()});
+['d1','d2','z'].forEach(i=>$(i).onchange=draw);draw();
+</script></body></html>

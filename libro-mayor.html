@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Libro Mayor – Pollolandia R.L.</title>
+<style>
+:root{--bg:#f6f4ee;--card:#fff;--tx:#1f2a24;--mut:#5d6b63;--ac:#2f6b3f;--bd:#dcd8cb;--er:#b42318}
+@media(prefers-color-scheme:dark){:root{--bg:#141a16;--card:#1d2620;--tx:#e8ede9;--mut:#9fb0a5;--ac:#6fbf86;--bd:#2f3c34;--er:#f1867b}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,Segoe UI,Roboto,sans-serif}
+.w{max-width:1000px;margin:auto;padding:1.2rem}a{color:var(--ac)}h1{margin:.3rem 0;font-size:1.5rem}h2{font-size:1.05rem;margin:1rem 0 .4rem}.mut{color:var(--mut)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:1rem 1.2rem;margin:1rem 0}
+input,select,button{font:inherit;padding:.45rem .6rem;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);max-width:100%}button{cursor:pointer}
+.tabs button.on{background:var(--ac);color:#fff;border-color:var(--ac)}.bar{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;margin:.6rem 0}
+.sc{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:.92rem}th,td{padding:.3rem .45rem;border-bottom:1px solid var(--bd);text-align:left;vertical-align:top}
+.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}.t td,.t th{font-weight:700;border-top:2px solid var(--bd)}.hd td{background:var(--bg);font-weight:700;color:var(--ac)}
+tr.cl{cursor:pointer}tr.cl:hover{background:var(--bg)}tr.mv td{font-size:.85rem;color:var(--mut)}.bad{color:var(--er)}.ok{color:var(--ac)}
+@media print{.noprint{display:none}}
+</style></head><body><div class="w">
+<a href="index.html" class="noprint">← Volver al sistema</a>
+<h1>Libro Mayor</h1>
+<p class="mut">Cooperativa Agropecuaria Pollolandia R.L. · Se alimenta del Libro Diario de este navegador · Bs</p>
+<div class="card noprint"><div class="tabs bar"><button data-v="m" class="on">Mayor por cuenta</button><button data-v="a">Analítico por sufijo de costos</button><button data-v="s">Sumas y saldos</button></div>
+<div class="bar">Desde <input type="date" id="d1"> Hasta <input type="date" id="d2"> <button id="pr" onclick="print()">Imprimir</button></div></div>
+<div class="card" id="out"></div>
+<p class="mut">Módulo 3 · Versión 0.5. El saldo se calcula según la naturaleza de cada cuenta. Los centros de costo 6.1.01.01 y 6.1.01.02 se mueven por sufijo y su saldo total es el costo acumulado del ciclo.</p>
+</div>
+<script src="datos-plan.js"></script>
+<script>
+const KEY='pollolandia_diario_v1',$=id=>document.getElementById(id);
+let E=[];try{E=JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){}
+const esc=s=>String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+const f2=n=>Math.abs(n)<0.005?'0.00':n.toLocaleString('es-BO',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fd=s=>{const [y,m,d]=s.split('-');return `${d}/${m}/${y}`};
+const bs=c=>c.split('-')[0],sf=c=>c.includes('-')?c.split('-')[1]:'';
+const nat=b=>b.startsWith('6.1.01')?'Deudora':(NAT[b]||'Deudora');
+const nm=b=>NAMES[b]||b;
+let V='m',SEL='';
+function lines(){const a=$('d1').value,z=$('d2').value,L=[];
+ E.forEach(e=>{if((a&&e.f<a)||(z&&e.f>z))return;e.l.forEach(l=>L.push({n:e.n,f:e.f,g:e.g,c:l.c,b:bs(l.c),s:sf(l.c),d:l.d||0,h:l.h||0}))});
+ return L.sort((x,y)=>x.f.localeCompare(y.f)||x.n-y.n)}
+const sal=(b,d,h)=>nat(b)=='Acreedora'?h-d:d-h;
+function vm(L){const bases=[...new Set(L.map(x=>x.b))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+ if(!bases.length)return '<p class="mut">No hay asientos en el período. Registra asientos en el Libro Diario.</p>';
+ if(!bases.includes(SEL))SEL=bases[0];
+ let h=`<div class="bar noprint"><select id="sel">${bases.map(b=>`<option value="${b}"${b==SEL?' selected':''}>${b} ${esc(nm(b))}</option>`).join('')}</select></div>`;
+ const R=L.filter(x=>x.b==SEL);let run=0,D=0,H=0,isC=SEL.startsWith('6.1.01');
+ h+=`<h2>${SEL} ${esc(nm(SEL))} <span class="mut">(saldo ${nat(SEL).toLowerCase()})</span></h2><div class="sc"><table><tr><th>Fecha</th><th>Asiento</th><th>Glosa</th>${isC?'<th>Sufijo</th>':''}<th class="n">Debe</th><th class="n">Haber</th><th class="n">Saldo</th></tr>`;
+ R.forEach(x=>{D+=x.d;H+=x.h;run=sal(SEL,D,H);h+=`<tr><td>${fd(x.f)}</td><td>${x.n}</td><td>${esc(x.g)}</td>${isC?`<td>${x.s} ${esc((SUF[x.s]||[''])[0])}</td>`:''}<td class="n">${x.d?f2(x.d):''}</td><td class="n">${x.h?f2(x.h):''}</td><td class="n">${f2(run)}</td></tr>`});
+ return h+`<tr class="t"><td colspan="${isC?4:3}">Totales</td><td class="n">${f2(D)}</td><td class="n">${f2(H)}</td><td class="n">${f2(run)}</td></tr></table></div>`}
+function va(L){let h='';
+ for(const b of Object.keys(SC)){const R=L.filter(x=>x.b==b);
+  h+=`<h2>${b} ${esc(nm(b))}</h2>`;
+  if(!R.length){h+='<p class="mut">Sin movimientos de costos en el período.</p>';continue}
+  h+='<div class="sc"><table><tr><th>Sufijo</th><th>Elemento del costo</th><th class="n">Debe</th><th class="n">Haber</th><th class="n">Saldo</th></tr>';
+  let TD=0,TH=0;const el={};
+  [...new Set(R.map(x=>x.s))].sort().forEach(s=>{const r=R.filter(x=>x.s==s),d=r.reduce((a,x)=>a+x.d,0),hh=r.reduce((a,x)=>a+x.h,0),t=(SUF[s]||['Sin sufijo','—'])[1];
+   TD+=d;TH+=hh;(el[t]=el[t]||{d:0,h:0}).d+=d;el[t].h+=hh;
+   h+=`<tr class="cl" onclick="document.querySelectorAll('.m${b.replace(/\./g,'')}${s}').forEach(e=>e.hidden=!e.hidden)"><td>${s||'—'}</td><td>${esc((SUF[s]||['Sin sufijo'])[0])} <span class="mut">(${t})</span></td><td class="n">${f2(d)}</td><td class="n">${f2(hh)}</td><td class="n">${f2(d-hh)}</td></tr>`+
+   r.map(x=>`<tr class="mv m${b.replace(/\./g,'')}${s}" hidden><td>${fd(x.f)}</td><td colspan="2">As. ${x.n} · ${esc(x.g)}</td><td class="n">${x.d?f2(x.d):''}</td><td class="n">${x.h?f2(x.h):''}</td></tr>`).join('')});
+  Object.keys(el).forEach(t=>h+=`<tr class="hd"><td colspan="4">Subtotal ${esc(t)}</td><td class="n">${f2(el[t].d-el[t].h)}</td></tr>`);
+  h+=`<tr class="t"><td colspan="2">COSTO ACUMULADO DEL CENTRO</td><td class="n">${f2(TD)}</td><td class="n">${f2(TH)}</td><td class="n">${f2(TD-TH)}</td></tr></table></div>`}
+ return h+'<p class="mut noprint">Toca una fila para ver los movimientos del sufijo.</p>'}
+function vs(L){const B={};L.forEach(x=>{const o=B[x.b]=B[x.b]||{d:0,h:0};o.d+=x.d;o.h+=x.h});
+ const ks=Object.keys(B).sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));if(!ks.length)return '<p class="mut">No hay asientos en el período.</p>';
+ let h='<h2>Balance de comprobación de sumas y saldos</h2><div class="sc"><table><tr><th>Código</th><th>Cuenta</th><th class="n">Suma Debe</th><th class="n">Suma Haber</th><th class="n">Saldo Deudor</th><th class="n">Saldo Acreedor</th></tr>';
+ let a=0,b=0,c=0,d=0;
+ ks.forEach(k=>{const o=B[k],s=o.d-o.h,sd=s>0?s:0,sa=s<0?-s:0;a+=o.d;b+=o.h;c+=sd;d+=sa;h+=`<tr><td>${k}</td><td>${esc(nm(k))}</td><td class="n">${f2(o.d)}</td><td class="n">${f2(o.h)}</td><td class="n">${sd?f2(sd):''}</td><td class="n">${sa?f2(sa):''}</td></tr>`});
+ const ok=Math.abs(a-b)<0.005&&Math.abs(c-d)<0.005;
+ return h+`<tr class="t"><td colspan="2">Totales <span class="${ok?'ok':'bad'}">${ok?'✔ cuadra':'✘ no cuadra'}</span></td><td class="n">${f2(a)}</td><td class="n">${f2(b)}</td><td class="n">${f2(c)}</td><td class="n">${f2(d)}</td></tr></table></div>`}
+function draw(){const L=lines();$('out').innerHTML=V=='m'?vm(L):V=='a'?va(L):vs(L);const s=$('sel');if(s)s.onchange=()=>{SEL=s.value;draw()}}
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{V=b.dataset.v;document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x==b));draw()});
+$('d1').onchange=$('d2').onchange=draw;draw();
+</script></body></html>

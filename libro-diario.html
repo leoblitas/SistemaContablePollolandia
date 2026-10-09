@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Libro Diario – Pollolandia R.L.</title>
+<style>
+:root{--bg:#f6f4ee;--card:#fff;--tx:#1f2a24;--mut:#5d6b63;--ac:#2f6b3f;--bd:#dcd8cb;--er:#b42318}
+@media(prefers-color-scheme:dark){:root{--bg:#141a16;--card:#1d2620;--tx:#e8ede9;--mut:#9fb0a5;--ac:#6fbf86;--bd:#2f3c34;--er:#f1867b}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,Segoe UI,Roboto,sans-serif}
+.w{max-width:1000px;margin:auto;padding:1.2rem}a{color:var(--ac)}h1{margin:.3rem 0;font-size:1.5rem}h2{font-size:1.1rem;margin:.2rem 0 .6rem}.mut{color:var(--mut)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:1rem 1.2rem;margin:1rem 0}
+input,button{font:inherit;padding:.45rem .6rem;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);max-width:100%}
+button{cursor:pointer}button.p{background:var(--ac);color:#fff;border-color:var(--ac)}
+.top{display:flex;gap:.6rem;flex-wrap:wrap}.top input[name=g]{flex:1;min-width:220px}
+.sc{overflow-x:auto}table{width:100%;border-collapse:collapse}th,td{padding:.3rem .4rem;border-bottom:1px solid var(--bd);text-align:left;vertical-align:top}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}.l input.c{width:100%;min-width:230px}.l input.m{width:110px;text-align:right}
+.tot{font-weight:700}.ok{color:var(--ac)}.bad{color:var(--er)}#msg{min-height:1.4rem;margin:.5rem 0}
+.as{border-top:2px solid var(--bd);padding-top:.4rem}.as .h{display:flex;gap:.6rem;align-items:baseline;flex-wrap:wrap;font-weight:600}.as .h span.g{flex:1;font-weight:400}
+#ac{position:absolute;z-index:20;background:var(--card);border:1px solid var(--bd);border-radius:8px;max-height:260px;overflow:auto;box-shadow:0 6px 18px rgba(0,0,0,.18);min-width:300px}
+#ac div{padding:.35rem .6rem;cursor:pointer;display:flex;gap:.6rem}#ac div:hover,#ac div.a{background:var(--ac);color:#fff}#ac b{font-family:ui-monospace,Consolas,monospace;font-weight:400;opacity:.8;white-space:nowrap}#ac i{padding:.4rem .6rem;color:var(--mut);display:block}
+.dc{padding-left:1.6rem}.x{background:none;border:none;color:var(--er);padding:.1rem .4rem}
+@media print{.noprint,.x{display:none}}
+</style></head><body><div class="w">
+<a href="index.html" class="noprint">← Volver al sistema</a>
+<h1>Libro Diario</h1>
+<p class="mut">Cooperativa Agropecuaria Pollolandia R.L. · Moneda: bolivianos (Bs). Las cuentas se validan contra el Plan de Cuentas (<span id="nc"></span> cuentas y sufijos de costo).</p>
+
+<div class="card noprint"><h2>Nuevo asiento</h2>
+<div class="top"><input type="date" name="f" id="f"><input name="g" id="g" placeholder="Glosa o descripción del asiento"></div>
+<div class="sc"><table class="l"><thead><tr><th>Cuenta</th><th class="n">Debe</th><th class="n">Haber</th><th></th></tr></thead><tbody id="ls"></tbody>
+<tfoot><tr class="tot"><td>Totales <button id="add" type="button">+ Línea</button></td><td class="n" id="td">0.00</td><td class="n" id="th">0.00</td><td></td></tr></tfoot></table></div>
+<div id="msg"></div><button class="p" id="save">Registrar asiento</button> <button id="clr">Limpiar</button></div>
+<div id="ac" hidden></div>
+
+<div class="card"><h2>Asientos registrados <span class="mut" id="cnt"></span></h2>
+<div class="noprint" style="margin-bottom:.6rem"><button id="csv">Exportar CSV</button> <button onclick="print()">Imprimir</button> <button id="imp">Importar respaldo (JSON)</button> <button id="exp">Descargar respaldo (JSON)</button><input type="file" id="fi" accept=".json" hidden></div>
+<div id="lib"></div>
+<p class="tot" id="gt"></p></div>
+<p class="mut">Módulo 2 · Versión 0.5. Los asientos se guardan en este navegador; descarga el respaldo JSON para conservarlos o moverlos a otro equipo.</p>
+</div>
+<script src="datos-plan.js"></script>
+<script>
+const KEY='pollolandia_diario_v1';
+const map=Object.fromEntries(PC.map(a=>[a[0],a]));
+const esc=s=>String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+const $=id=>document.getElementById(id);
+const f2=n=>(Math.round(n*100)/100).toLocaleString('es-BO',{minimumFractionDigits:2,maximumFractionDigits:2});
+let E=[];
+try{E=JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){E=[]}
+const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(E))}catch(e){msg('No se pudo guardar en el navegador. Descarga el respaldo JSON.',1)}};
+function msg(t,bad){$('msg').innerHTML=t?`<span class="${bad?'bad':'ok'}">${esc(t)}</span>`:''}
+$('nc').textContent=PC.length;
+$('f').valueAsDate=new Date();
+function line(){const tr=document.createElement('tr');
+ tr.innerHTML='<td><input class="c" autocomplete="off" placeholder="Código o nombre de cuenta"></td><td><input class="m d" inputmode="decimal" placeholder="0.00"></td><td><input class="m h" inputmode="decimal" placeholder="0.00"></td><td><button class="x" type="button" title="Quitar">✕</button></td>';
+ tr.querySelector('.x').onclick=()=>{tr.remove();calc()};tr.oninput=calc;$('ls').appendChild(tr)}
+const num=v=>{const n=parseFloat(String(v).replace(',','.'));return isNaN(n)?0:n};
+const code=v=>{const m=String(v).trim().match(/^\d(?:\.\d{1,2}){3}(?:-\d{2})?/);return m?m[0]:''};
+function calc(){let d=0,h=0;document.querySelectorAll('#ls tr').forEach(r=>{d+=num(r.querySelector('.d').value);h+=num(r.querySelector('.h').value)});
+ $('td').textContent=f2(d);$('th').textContent=f2(h);const ok=Math.abs(d-h)<0.005&&d>0;
+ $('td').className=$('th').className='n '+(ok?'ok':(d||h?'bad':''));return{d,h,ok}}
+function reset(){$('ls').innerHTML='';line();line();$('g').value='';calc()}
+$('add').onclick=line;$('clr').onclick=()=>{reset();msg('')};
+$('save').onclick=()=>{
+ const rows=[];let err='';
+ document.querySelectorAll('#ls tr').forEach((r,i)=>{const raw=r.querySelector('.c').value,d=num(r.querySelector('.d').value),h=num(r.querySelector('.h').value);
+  if(!raw&&!d&&!h)return;const c=code(raw);
+  if(!c||!map[c])err=err||`Línea ${i+1}: cuenta no válida. Elige una cuenta del Plan de Cuentas.`;
+  else if(d<0||h<0)err=err||`Línea ${i+1}: no se admiten montos negativos.`;
+  else if((d>0)===(h>0))err=err||`Línea ${i+1}: indica un monto en Debe o en Haber, no en ambos ni en ninguno.`;
+  else rows.push({c,d,h})});
+ if(err)return msg(err,1);
+ if(!$('f').value)return msg('Indica la fecha.',1);
+ if(!$('g').value.trim())return msg('Escribe la glosa del asiento.',1);
+ if(rows.length<2)return msg('Un asiento requiere al menos dos líneas.',1);
+ const t=calc();if(!t.ok)return msg('El asiento no cuadra: el Debe debe ser igual al Haber.',1);
+ const n=E.reduce((m,e)=>Math.max(m,e.n),0)+1;
+ E.push({n,f:$('f').value,g:$('g').value.trim(),l:rows});persist();reset();msg(`Asiento N.º ${n} registrado.`);draw()};
+function draw(){
+ const S=[...E].sort((a,b)=>a.f.localeCompare(b.f)||a.n-b.n);let D=0,H=0;
+ $('cnt').textContent=`(${E.length})`;
+ $('lib').innerHTML=S.map(e=>{const [y,m,d]=e.f.split('-');
+  return `<div class="as"><div class="h"><span>N.º ${e.n}</span><span>${d}/${m}/${y}</span><span class="g">${esc(e.g)}</span><button class="x noprint" data-n="${e.n}">Eliminar</button></div><div class="sc"><table>`+
+  e.l.map(l=>{D+=l.d;H+=l.h;return `<tr><td class="${l.h>0?'dc':''}">${l.c} ${esc(map[l.c]?map[l.c][1]:'(cuenta no encontrada)')}</td><td class="n">${l.d?f2(l.d):''}</td><td class="n">${l.h?f2(l.h):''}</td></tr>`}).join('')+`</table></div></div>`}).join('')||'<p class="mut">Aún no hay asientos registrados.</p>';
+ $('gt').innerHTML=E.length?`Sumas totales: Debe ${f2(D)} · Haber ${f2(H)} <span class="${Math.abs(D-H)<0.005?'ok':'bad'}">${Math.abs(D-H)<0.005?'✔ cuadra':'✘ no cuadra'}</span>`:'';
+ document.querySelectorAll('.as .x').forEach(b=>b.onclick=()=>{if(confirm('¿Eliminar el asiento N.º '+b.dataset.n+'?')){E=E.filter(e=>e.n!=b.dataset.n);persist();draw()}})}
+const dl=(name,txt,type)=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type}));a.download=name;a.click()};
+$('csv').onclick=()=>{const r=[['Asiento','Fecha','Glosa','Código','Cuenta','Debe','Haber']];
+ E.forEach(e=>e.l.forEach(l=>r.push([e.n,e.f,e.g,l.c,map[l.c]?map[l.c][1]:'',l.d||'',l.h||''])));
+ dl('libro_diario_pollolandia.csv','\ufeff'+r.map(a=>a.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n'),'text/csv')};
+$('exp').onclick=()=>dl('respaldo_diario_pollolandia.json',JSON.stringify(E),'application/json');
+$('imp').onclick=()=>$('fi').click();
+$('fi').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const x=JSON.parse(r.result);
+ if(!Array.isArray(x)||!x.every(a=>a&&a.f&&a.g&&Array.isArray(a.l)))throw 0;
+ if(confirm('Esto reemplazará los asientos actuales por los del respaldo. ¿Continuar?')){E=x;persist();draw()}}catch(_){alert('El archivo no es un respaldo válido.')}};r.readAsText(f);e.target.value=''};
+/* Autocompletado propio (busca por código o nombre, sin importar tildes) */
+const norm=s=>String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+const IDX=PC.map(a=>({a,k:norm(a[0]+' '+a[1])}));
+let cur=null,sel=-1,items=[];
+function show(inp){cur=inp;const q=norm(inp.value).trim().split(/\s+/).filter(Boolean);
+ items=IDX.filter(o=>q.every(w=>o.k.includes(w))).map(o=>o.a);sel=-1;
+ const box=$('ac');box.innerHTML=items.length?items.map((a,i)=>`<div data-i="${i}"><b>${a[0]}</b><span>${esc(a[1])}</span></div>`).join(''):'<i>Sin coincidencias en el Plan de Cuentas</i>';
+ const r=inp.getBoundingClientRect();box.style.left=(r.left+scrollX)+'px';box.style.top=(r.bottom+scrollY+2)+'px';box.style.width=Math.max(r.width,320)+'px';box.hidden=false}
+function pick(i){const a=items[i];if(!a||!cur)return;cur.value=a[0]+' '+a[1];$('ac').hidden=true;const n=cur.closest('tr').querySelector('.d');n.focus();calc()}
+function mark(){[...$('ac').children].forEach((c,i)=>c.classList.toggle('a',i==sel));const c=$('ac').children[sel];if(c)c.scrollIntoView({block:'nearest'})}
+$('ls').addEventListener('input',e=>{if(e.target.classList.contains('c'))show(e.target)});
+$('ls').addEventListener('focusin',e=>{if(e.target.classList.contains('c'))show(e.target)});
+$('ls').addEventListener('keydown',e=>{if(!e.target.classList.contains('c')||$('ac').hidden)return;
+ if(e.key=='ArrowDown'){sel=Math.min(sel+1,items.length-1);mark();e.preventDefault()}
+ else if(e.key=='ArrowUp'){sel=Math.max(sel-1,0);mark();e.preventDefault()}
+ else if(e.key=='Enter'&&items.length){pick(sel<0?0:sel);e.preventDefault()}
+ else if(e.key=='Escape')$('ac').hidden=true});
+$('ac').addEventListener('mousedown',e=>{const d=e.target.closest('[data-i]');if(d){e.preventDefault();pick(+d.dataset.i)}});
+document.addEventListener('click',e=>{if(!e.target.classList.contains('c')&&!$('ac').contains(e.target))$('ac').hidden=true});
+
+reset();draw();
+</script></body></html>
