@@ -1,0 +1,12 @@
+{
+  "name": "pollolandia-contable",
+  "version": "1.0.0",
+  "description": "Pollolandia Contable — piloto de demostración (sin login): Node.js + SQLite",
+  "private": true,
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning piloto/server.js",
+    "reset": "node --disable-warning=ExperimentalWarning piloto/server.js --reset",
+    "test": "node --test piloto/tests/*.test.js"
+  },
+  "engines": { "node": ">=22.13" }
+}

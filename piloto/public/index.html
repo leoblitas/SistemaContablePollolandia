@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pollolandia Contable — Demo</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: { brand: { 50: '#fff8eb', 100: '#feefc7', 500: '#d97706', 600: '#b45309', 700: '#92400e' } } } } };
+  </script>
+  <style>[hidden]{display:none!important} .num{font-variant-numeric:tabular-nums}</style>
+</head>
+<body class="bg-stone-50 text-stone-800 min-h-screen">
+
+<!-- ============================ BARRA SUPERIOR ============================ -->
+<header class="bg-white border-b border-stone-200 sticky top-0 z-30">
+  <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center gap-3">
+    <div class="flex items-center gap-3 mr-auto">
+      <div class="w-9 h-9 rounded-lg bg-brand-500 text-white grid place-items-center font-bold">P</div>
+      <div>
+        <h1 class="font-semibold leading-tight">Pollolandia Contable</h1>
+        <p class="text-xs text-stone-500 leading-tight">Cooperativa Agropecuaria Pollolandia R.L.</p>
+      </div>
+      <span class="ml-2 text-xs font-medium bg-amber-100 text-amber-800 rounded-full px-2.5 py-1">DEMO · sin autenticación</span>
+    </div>
+    <label class="flex items-center gap-2 text-sm">
+      <span class="text-stone-600">Cambiar Rol Activo</span>
+      <select id="selRol" class="border border-stone-300 rounded-lg bg-white px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-500"></select>
+    </label>
+  </div>
+  <nav id="nav" class="max-w-7xl mx-auto px-4 flex gap-1 overflow-x-auto text-sm">
+    <button data-tab="panel"   class="tab">Panel</button>
+    <button data-tab="cuentas" data-perm="cuentas.ver"   class="tab">Plan de cuentas</button>
+    <button data-tab="diario"  data-perm="asientos.ver"  class="tab">Libro diario</button>
+    <button data-tab="lotes"   data-perm="lotes.ver"     class="tab">Lotes y costos</button>
+    <button data-tab="balance" data-perm="reportes.ver"  class="tab">Balance de comprobación</button>
+    <a href="operaciones.html" data-perm="ventas.ver" class="px-4 py-2.5 border-b-2 border-transparent text-stone-500 hover:text-stone-800 whitespace-nowrap">Faenado y ventas</a>
+    <a href="kpis.html" data-perm="kpis.ver" class="px-4 py-2.5 border-b-2 border-transparent text-stone-500 hover:text-stone-800 whitespace-nowrap">Indicadores (KPIs)</a>
+    <a href="accounting/asignar-costos.html" data-perm="costos.ver" class="px-4 py-2.5 border-b-2 border-transparent text-stone-500 hover:text-stone-800 whitespace-nowrap">Asignar costos</a>
+    <a href="reports.html" data-perm="reportes.ver" class="px-4 py-2.5 border-b-2 border-transparent text-stone-500 hover:text-stone-800 whitespace-nowrap">Reportes y auditoría</a>
+  </nav>
+</header>
+
+<main class="max-w-7xl mx-auto px-4 py-6">
+  <div id="aviso" class="mb-5 rounded-xl border border-amber-200 bg-amber-50 text-amber-900 text-sm px-4 py-3">
+    Modo demostración: el acceso es libre y el rol se cambia sin contraseña. Cada rol solo ve y puede hacer lo que le asigna el MOF-FIN-001.
+  </div>
+
+  <!-- ================================ PANEL ================================ -->
+  <section id="tab-panel" class="space-y-6">
+    <div class="bg-white rounded-xl border border-stone-200 p-5">
+      <p class="text-xs uppercase tracking-wide text-stone-500">Rol activo</p>
+      <h2 id="rolNombre" class="text-xl font-semibold"></h2>
+      <p id="rolDescr" class="text-sm text-stone-600 mt-1"></p>
+      <div id="rolPermisos" class="flex flex-wrap gap-2 mt-3"></div>
+    </div>
+    <div id="kpis" class="grid grid-cols-2 lg:grid-cols-4 gap-4"></div>
+
+    <div data-perm="asientos.autorizar" class="bg-white rounded-xl border border-stone-200 p-5">
+      <h3 class="font-semibold">Pendientes de autorización</h3>
+      <p class="text-sm text-stone-500 mb-3">Los asientos de ajuste y cierre los autoriza el Gerente General; quien los registró no puede autorizarlos.</p>
+      <div id="pendientes" class="divide-y divide-stone-100"></div>
+    </div>
+
+    <div data-perm="lotes.ver" class="bg-white rounded-xl border border-stone-200 p-5">
+      <h3 class="font-semibold mb-3">Lotes en producción</h3>
+      <div id="panelLotes" class="grid md:grid-cols-2 gap-4"></div>
+    </div>
+  </section>
+
+  <!-- ============================ PLAN DE CUENTAS ============================ -->
+  <section id="tab-cuentas" hidden class="bg-white rounded-xl border border-stone-200">
+    <div class="p-4 flex flex-wrap gap-3 items-center border-b border-stone-100">
+      <h2 class="font-semibold mr-auto">Plan de cuentas <span class="text-stone-400 font-normal">· 4 niveles</span></h2>
+      <select id="fNivel" class="border border-stone-300 rounded-lg px-2 py-1.5 text-sm">
+        <option value="0">Todos los niveles</option><option value="1">1 · Grupo</option><option value="2">2 · Clasificación</option>
+        <option value="3">3 · Subgrupo</option><option value="4">4 · Cuenta imputable</option>
+      </select>
+      <input id="fBuscar" placeholder="Buscar código o nombre…" class="border border-stone-300 rounded-lg px-3 py-1.5 text-sm w-64">
+    </div>
+    <div class="overflow-auto max-h-[70vh]"><table class="w-full text-sm" id="tCuentas"></table></div>
+  </section>
+
+  <!-- ============================== LIBRO DIARIO ============================== -->
+  <section id="tab-diario" hidden class="bg-white rounded-xl border border-stone-200">
+    <div class="p-4 flex flex-wrap gap-3 items-center border-b border-stone-100">
+      <h2 class="font-semibold mr-auto">Libro diario</h2>
+      <button data-perm="asientos.registrar" id="btnNuevoAsiento" class="bg-brand-500 hover:bg-brand-600 text-white rounded-lg px-4 py-2 text-sm font-medium">+ Nuevo asiento</button>
+    </div>
+    <div class="overflow-auto"><table class="w-full text-sm" id="tAsientos"></table></div>
+  </section>
+
+  <!-- ============================== LOTES Y COSTOS ============================== -->
+  <section id="tab-lotes" hidden class="bg-white rounded-xl border border-stone-200">
+    <div class="p-4 flex flex-wrap gap-3 items-center border-b border-stone-100">
+      <h2 class="font-semibold mr-auto">Lotes <span class="text-stone-400 font-normal">· ciclo de 73 días</span></h2>
+      <button data-perm="lotes.abrir" id="btnNuevoLote" class="bg-brand-500 hover:bg-brand-600 text-white rounded-lg px-4 py-2 text-sm font-medium">+ Abrir lote</button>
+    </div>
+    <div class="overflow-auto"><table class="w-full text-sm" id="tLotes"></table></div>
+  </section>
+
+  <!-- ============================== BALANCE ============================== -->
+  <section id="tab-balance" hidden class="bg-white rounded-xl border border-stone-200">
+    <div class="p-4 border-b border-stone-100"><h2 class="font-semibold">Balance de comprobación de sumas y saldos <span class="text-stone-400 font-normal">· Bs</span></h2></div>
+    <div class="overflow-auto"><table class="w-full text-sm" id="tBalance"></table></div>
+  </section>
+</main>
+
+<!-- ================================ MODAL ================================ -->
+<div id="modal" hidden class="fixed inset-0 z-40 bg-stone-900/40 grid place-items-center p-4">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-auto">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-stone-100 sticky top-0 bg-white">
+      <h3 id="modalTitulo" class="font-semibold"></h3>
+      <button id="modalCerrar" class="text-stone-400 hover:text-stone-700 text-2xl leading-none" aria-label="Cerrar">&times;</button>
+    </div>
+    <div id="modalCuerpo" class="p-5"></div>
+  </div>
+</div>
+<div id="toast" hidden class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 max-w-lg rounded-xl px-4 py-3 text-sm shadow-lg"></div>
+
+<script>
+/* ============================ utilidades ============================ */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const bs = (n) => Number(n || 0).toLocaleString('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const hoy = () => new Date().toISOString().slice(0, 10);
+
+const MOF = {
+  GG: { desc: 'Dirige la gestión financiera: autoriza ajustes, cierres y anulaciones, y aprueba el cierre de ciclo. No registra transacciones (MOF 2.1).' },
+  JF: { desc: 'Registra y contabiliza asientos, abre lotes y costea el ciclo. No autoriza desembolsos ni ajustes, ni modifica el plan de cuentas (MOF 2.2).' },
+  UT: { desc: 'Registra la bitácora diaria del lote (alimento, mortalidad, novedades sanitarias). Sin acceso al módulo contable (MOF 2.3).' },
+};
+const PERM_ETIQUETA = {
+  'cuentas.ver': 'Ver plan de cuentas', 'asientos.ver': 'Ver libro diario', 'asientos.registrar': 'Registrar asientos',
+  'asientos.autorizar': 'Autorizar ajustes y cierres', 'lotes.ver': 'Ver lotes', 'lotes.abrir': 'Abrir lotes',
+  'lotes.bitacora': 'Registrar bitácora', 'lotes.cerrar': 'Cerrar ciclo', 'lotes.aprobar_cierre': 'Aprobar cierre de ciclo',
+  'costos.ver': 'Ver costos', 'reportes.ver': 'Ver reportes', 'auditoria.ver': 'Ver auditoría', 'usuarios.administrar': 'Administrar usuarios',
+};
+
+const estado = { rol: null, permisos: new Set(), tab: 'panel', catalogos: null };
+const can = (p) => estado.permisos.has(p);
+
+async function api(ruta, opciones = {}) {
+  const r = await fetch(ruta, {
+    ...opciones,
+    headers: { 'X-Rol': estado.rol, ...(opciones.body ? { 'Content-Type': 'application/json' } : {}) },
+  });
+  const datos = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(datos.error || `Error ${r.status}`);
+  return datos;
+}
+function aviso(texto, error = false) {
+  const t = $('#toast');
+  t.textContent = texto;
+  t.className = 'fixed bottom-5 left-1/2 -translate-x-1/2 z-50 max-w-lg rounded-xl px-4 py-3 text-sm shadow-lg ' +
+    (error ? 'bg-red-600 text-white' : 'bg-stone-900 text-white');
+  t.hidden = false;
+  clearTimeout(aviso._t);
+  aviso._t = setTimeout(() => (t.hidden = true), error ? 6000 : 3000);
+}
+const intentar = (fn) => async (...a) => { try { await fn(...a); } catch (e) { aviso(e.message, true); } };
+
+/* ---- estilos reutilizables ---- */
+const TH = 'text-left font-medium text-stone-500 bg-stone-50 px-4 py-2.5 sticky top-0';
+const TD = 'px-4 py-2.5 border-t border-stone-100';
+const BTN = 'rounded-lg px-3 py-1.5 text-sm font-medium';
+const BTN_P = `${BTN} bg-brand-500 hover:bg-brand-600 text-white`;
+const BTN_S = `${BTN} border border-stone-300 hover:bg-stone-100`;
+const INPUT = 'border border-stone-300 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-500';
+const chip = (txt, color) => `<span class="inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${color}">${esc(txt)}</span>`;
+const CHIP_ESTADO = { CONTABILIZADO: 'bg-emerald-100 text-emerald-800', BORRADOR: 'bg-amber-100 text-amber-800', ANULADO: 'bg-stone-200 text-stone-600', ABIERTO: 'bg-sky-100 text-sky-800', CERRADO: 'bg-stone-200 text-stone-600' };
+
+/* ============================ rol activo y permisos ============================ */
+function aplicarPermisos() {
+  $$('[data-perm]').forEach((el) => (el.hidden = !can(el.dataset.perm)));
+  // si la pestaña actual quedó oculta, volver al panel
+  const btn = $(`[data-tab="${estado.tab}"]`);
+  if (btn && btn.hidden) estado.tab = 'panel';
+  mostrarTab(estado.tab);
+}
+function mostrarTab(tab) {
+  estado.tab = tab;
+  $$('section[id^="tab-"]').forEach((s) => (s.hidden = s.id !== `tab-${tab}`));
+  $$('.tab').forEach((b) => {
+    const activa = b.dataset.tab === tab;
+    b.className = 'tab px-4 py-2.5 border-b-2 whitespace-nowrap ' + (activa ? 'border-brand-500 text-brand-700 font-medium' : 'border-transparent text-stone-500 hover:text-stone-800');
+  });
+  ({ panel: cargarPanel, cuentas: cargarCuentas, diario: cargarAsientos, lotes: cargarLotes, balance: cargarBalance }[tab] || (() => {}))().catch((e) => aviso(e.message, true));
+}
+async function cambiarRol(codigo) {
+  estado.rol = codigo;
+  try { localStorage.setItem('rolActivo', codigo); } catch {}
+  const yo = await api('/api/yo');
+  estado.permisos = new Set(yo.permisos);
+  $('#rolNombre').textContent = yo.etiqueta;
+  $('#rolDescr').textContent = MOF[codigo]?.desc || '';
+  $('#rolPermisos').innerHTML = yo.permisos.map((p) => chip(PERM_ETIQUETA[p] || p, 'bg-brand-100 text-brand-700')).join('');
+  estado.catalogos = null;
+  aplicarPermisos();
+}
+
+/* ================================== PANEL ================================== */
+async function cargarPanel() {
+  const d = await api('/api/dashboard');
+  const k = [];
+  if (d.asientos) k.push(['Asientos contabilizados', d.asientos.CONTABILIZADO || 0], ['Asientos en borrador', d.asientos.BORRADOR || 0]);
+  if (d.cuentas != null) k.push(['Cuentas imputables activas', d.cuentas]);
+  if (d.lotes) k.push(['Lotes abiertos', d.lotes.filter((l) => l.estado === 'ABIERTO').length]);
+  if (d.costo_acumulado != null) k.push(['Costo acumulado (Bs)', bs(d.costo_acumulado)]);
+  $('#kpis').innerHTML = k.map(([t, v]) => `<div class="bg-white rounded-xl border border-stone-200 p-4"><p class="text-xs text-stone-500">${esc(t)}</p><p class="text-2xl font-semibold mt-1 num">${esc(v)}</p></div>`).join('');
+
+  $('#pendientes').innerHTML = (d.pendientes_autorizacion || []).map((a) => `
+    <div class="py-3 flex flex-wrap items-center gap-3">
+      <div class="mr-auto"><span class="font-medium">Asiento N° ${a.numero}</span> ${chip(a.tipo, 'bg-amber-100 text-amber-800')}
+        <p class="text-sm text-stone-500">${esc(a.fecha)} · ${esc(a.glosa)}</p></div>
+      <button class="${BTN_S}" data-ver="${a.id}">Ver detalle</button>
+      <button class="${BTN_P}" data-autorizar="${a.id}">Autorizar</button>
+    </div>`).join('') || '<p class="text-sm text-stone-400 py-2">No hay asientos pendientes.</p>';
+
+  $('#panelLotes').innerHTML = (d.lotes || []).map(tarjetaLote).join('') || '<p class="text-sm text-stone-400">Sin lotes.</p>';
+}
+function tarjetaLote(l) {
+  const dia = l.dia_actual || 0, pct = Math.min(100, Math.round((dia / 73) * 100));
+  const anormal = l.clasificacion === 'ANORMAL';
+  return `<div class="border border-stone-200 rounded-xl p-4">
+    <div class="flex items-center justify-between"><p class="font-medium">${esc(l.codigo)}</p>${chip(l.estado, CHIP_ESTADO[l.estado])}</div>
+    <p class="text-xs text-stone-500 mt-0.5">${esc(l.fecha_inicio)} → ${esc(l.fecha_fin_prevista)} · ${Number(l.aves_iniciales).toLocaleString('es-BO')} aves</p>
+    <div class="mt-3"><div class="flex justify-between text-xs text-stone-500 mb-1"><span>Día ${dia} de 73</span><span>${pct}%</span></div>
+      <div class="h-2 rounded-full bg-stone-100"><div class="h-2 rounded-full bg-brand-500" style="width:${pct}%"></div></div></div>
+    <p class="text-sm mt-3">Mortalidad: <span class="font-medium num">${l.mortalidad_acumulada}</span> aves (${l.pct_mortalidad ?? 0}%)
+      ${chip(anormal ? 'Anormal > 5%' : 'Normal ≤ 5%', anormal ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-800')}</p>
+    <button class="${BTN_S} mt-3" data-lote="${l.id}" data-lote-cod="${esc(l.codigo)}">Abrir lote</button></div>`;
+}
+
+/* ============================== PLAN DE CUENTAS ============================== */
+async function cargarCuentas() {
+  const q = $('#fBuscar').value.trim(), nivel = $('#fNivel').value;
+  const filas = await api(`/api/cuentas?q=${encodeURIComponent(q)}&nivel=${nivel}`);
+  const sangria = { 1: 'font-bold', 2: 'font-semibold pl-6', 3: 'font-medium pl-10', 4: 'pl-14' };
+  $('#tCuentas').innerHTML = `<thead><tr><th class="${TH}">Código</th><th class="${TH}">Denominación</th><th class="${TH}">Naturaleza</th><th class="${TH}">Estado</th></tr></thead><tbody>` +
+    filas.map((c) => `<tr><td class="${TD} num whitespace-nowrap">${esc(c.codigo)}</td>
+      <td class="${TD}"><span class="${(sangria[c.nivel] || '').replace(/pl-\d+/, '')}" style="padding-left:${(c.nivel - 1) * 1.1}rem">${esc(c.nombre)}</span>
+        ${c.es_centro_costo ? chip('Centro de costo', 'bg-sky-100 text-sky-800') : ''}</td>
+      <td class="${TD} text-stone-600">${esc(c.naturaleza)}</td>
+      <td class="${TD}">${c.activa ? '' : chip('Desde ' + (c.vigente_desde || '').slice(0, 4), 'bg-stone-200 text-stone-600')}</td></tr>`).join('') + '</tbody>';
+}
+
+/* ================================ LIBRO DIARIO ================================ */
+async function cargarAsientos() {
+  const filas = await api('/api/asientos');
+  $('#tAsientos').innerHTML = `<thead><tr>${['N°', 'Fecha', 'Tipo', 'Glosa', 'Total Bs', 'Estado', 'Registró', ''].map((h) => `<th class="${TH}">${h}</th>`).join('')}</tr></thead><tbody>` +
+    filas.map((a) => `<tr>
+      <td class="${TD} num">${a.numero}</td><td class="${TD} whitespace-nowrap">${esc(a.fecha)}</td><td class="${TD}">${esc(a.tipo)}</td>
+      <td class="${TD}">${esc(a.glosa)}</td><td class="${TD} num text-right">${bs(a.total)}</td>
+      <td class="${TD}">${chip(a.estado, CHIP_ESTADO[a.estado])}</td><td class="${TD} text-stone-500">${esc(a.creado_por)}</td>
+      <td class="${TD} text-right whitespace-nowrap"><button class="${BTN_S}" data-ver="${a.id}">Ver</button>
+        ${a.estado === 'BORRADOR' && can('asientos.autorizar') ? `<button class="${BTN_P} ml-1" data-autorizar="${a.id}">Autorizar</button>` : ''}</td></tr>`).join('') + '</tbody>';
+}
+async function verAsiento(id) {
+  const a = await api(`/api/asientos/${id}`);
+  abrirModal(`Asiento N° ${a.numero} · ${a.tipo}`, `
+    <p class="text-sm text-stone-600">${esc(a.fecha)} · ${esc(a.glosa)} ${chip(a.estado, CHIP_ESTADO[a.estado])}</p>
+    ${a.documento_respaldo ? `<p class="text-xs text-stone-500 mt-1">Respaldo: ${esc(a.documento_respaldo)}</p>` : ''}
+    <table class="w-full text-sm mt-4"><thead><tr><th class="${TH}">Cuenta</th><th class="${TH}">Matriz de costos</th><th class="${TH} text-right">Debe</th><th class="${TH} text-right">Haber</th></tr></thead><tbody>
+    ${a.lineas.map((l) => `<tr><td class="${TD}"><span class="num">${esc(l.cuenta)}</span> ${esc(l.cuenta_nombre)}</td>
+      <td class="${TD} text-xs text-stone-500">${l.centro ? `${esc(l.centro)} · sufijo ${esc(l.sufijo)} · ${esc(l.lote)}` : ''}</td>
+      <td class="${TD} num text-right">${l.debe ? bs(l.debe) : ''}</td><td class="${TD} num text-right">${l.haber ? bs(l.haber) : ''}</td></tr>`).join('')}
+    </tbody></table>`);
+}
+const autorizar = intentar(async (id) => {
+  await api(`/api/asientos/${id}/autorizar`, { method: 'POST' });
+  aviso('Asiento autorizado y contabilizado');
+  mostrarTab(estado.tab);
+});
+
+/* --- formulario de nuevo asiento --- */
+async function catalogos() { return (estado.catalogos ||= await api('/api/catalogos')); }
+async function nuevoAsiento() {
+  const cat = await catalogos();
+  abrirModal('Nuevo asiento', `
+    <form id="fAsiento" class="space-y-4">
+      <div class="grid sm:grid-cols-3 gap-3">
+        <label class="text-sm">Tipo<select name="tipo" class="${INPUT}"><option value="DIARIO">Diario (se contabiliza al guardar)</option><option value="AJUSTE">Ajuste (requiere autorización del Gerente General)</option></select></label>
+        <label class="text-sm">Fecha<input type="date" name="fecha" value="${hoy()}" min="${cat.ejercicio.fecha_inicio}" max="${cat.ejercicio.fecha_fin}" class="${INPUT}" required></label>
+        <label class="text-sm">Documento de respaldo<input name="documento_respaldo" class="${INPUT}" placeholder="Factura, recibo…"></label>
+      </div>
+      <label class="text-sm block">Glosa<input name="glosa" class="${INPUT}" required></label>
+      <div><div id="lineas" class="space-y-2"></div>
+        <button type="button" id="addLinea" class="${BTN_S} mt-2">+ Agregar línea</button></div>
+      <div class="flex items-center justify-between border-t border-stone-100 pt-3">
+        <p class="text-sm">Debe <b id="sumDebe" class="num">0,00</b> · Haber <b id="sumHaber" class="num">0,00</b> <span id="cuadre"></span></p>
+        <button class="${BTN_P}">Guardar asiento</button></div>
+    </form>`);
+  const cont = $('#lineas');
+  const lineaHtml = () => {
+    const d = document.createElement('div');
+    d.className = 'grid grid-cols-12 gap-2 items-start linea';
+    d.innerHTML = `
+      <select class="${INPUT} col-span-12 sm:col-span-6 cuenta"><option value="">Cuenta…</option>${cat.cuentas.map((c) => `<option value="${c.codigo}">${esc(c.codigo)} · ${esc(c.nombre)}</option>`).join('')}</select>
+      <input type="number" step="0.01" min="0" placeholder="Debe" class="${INPUT} col-span-5 sm:col-span-2 debe">
+      <input type="number" step="0.01" min="0" placeholder="Haber" class="${INPUT} col-span-5 sm:col-span-2 haber">
+      <button type="button" class="col-span-2 text-stone-400 hover:text-red-600 text-xl quitar" aria-label="Quitar">&times;</button>
+      <div class="col-span-12 grid grid-cols-2 gap-2 costos" hidden>
+        <select class="${INPUT} sufijo"></select><select class="${INPUT} lote"></select></div>`;
+    cont.appendChild(d);
+  };
+  lineaHtml(); lineaHtml();
+  $('#addLinea').onclick = lineaHtml;
+  const sumar = () => {
+    let d = 0, h = 0;
+    $$('.linea', cont).forEach((l) => { d += +$('.debe', l).value || 0; h += +$('.haber', l).value || 0; });
+    $('#sumDebe').textContent = bs(d); $('#sumHaber').textContent = bs(h);
+    const ok = Math.round(d * 100) === Math.round(h * 100) && d > 0;
+    $('#cuadre').innerHTML = ok ? chip('Cuadrado', 'bg-emerald-100 text-emerald-800') : chip('Descuadrado', 'bg-red-100 text-red-700');
+  };
+  cont.addEventListener('input', (e) => {
+    const l = e.target.closest('.linea');
+    if (l && e.target.classList.contains('cuenta')) {
+      const c = cat.cuentas.find((x) => x.codigo === e.target.value);
+      const bloque = $('.costos', l);
+      bloque.hidden = !(c && c.es_centro_costo);
+      if (!bloque.hidden) {
+        $('.sufijo', l).innerHTML = '<option value="">Sufijo…</option>' + cat.sufijos.filter((s) => s.centro === c.centro).map((s) => `<option value="${s.codigo}">-${s.codigo} · ${esc(s.nombre)} (${s.elemento_costo})</option>`).join('');
+        $('.lote', l).innerHTML = '<option value="">Lote…</option>' + cat.lotes_abiertos.filter((x) => x.centro === c.centro).map((x) => `<option value="${x.id}">${esc(x.codigo)}</option>`).join('');
+        l.dataset.centro = c.centro;
+      }
+    }
+    sumar();
+  });
+  cont.addEventListener('click', (e) => { if (e.target.classList.contains('quitar') && $$('.linea', cont).length > 2) { e.target.closest('.linea').remove(); sumar(); } });
+  $('#fAsiento').onsubmit = intentar(async (ev) => {
+    ev.preventDefault();
+    const f = new FormData(ev.target);
+    const lineas = $$('.linea', cont).filter((l) => $('.cuenta', l).value).map((l) => ({
+      cuenta: $('.cuenta', l).value, debe: +$('.debe', l).value || 0, haber: +$('.haber', l).value || 0,
+      ...($('.costos', l).hidden ? {} : { centro: l.dataset.centro, sufijo: $('.sufijo', l).value, lote_id: $('.lote', l).value }),
+    }));
+    const r = await api('/api/asientos', { method: 'POST', body: JSON.stringify({ tipo: f.get('tipo'), fecha: f.get('fecha'), glosa: f.get('glosa'), documento_respaldo: f.get('documento_respaldo'), lineas }) });
+    cerrarModal();
+    aviso(r.estado === 'CONTABILIZADO' ? `Asiento N° ${r.numero} contabilizado` : `Asiento N° ${r.numero} guardado: pendiente de autorización del Gerente General`);
+    mostrarTab(estado.tab);
+  });
+}
+
+/* ================================ LOTES Y COSTOS ================================ */
+async function cargarLotes() {
+  const filas = await api('/api/lotes');
+  $('#tLotes').innerHTML = `<thead><tr>${['Lote', 'Centro', 'Ciclo', 'Inicio', 'Día 73', 'Aves', 'Día actual', 'Mortalidad', 'Estado', ''].map((h) => `<th class="${TH}">${h}</th>`).join('')}</tr></thead><tbody>` +
+    filas.map((l) => `<tr><td class="${TD} font-medium">${esc(l.codigo)}</td><td class="${TD}">${esc(l.centro)}</td><td class="${TD} num">${l.numero_ciclo}</td>
+      <td class="${TD} whitespace-nowrap">${esc(l.fecha_inicio)}</td><td class="${TD} whitespace-nowrap">${esc(l.fecha_fin_prevista)}</td>
+      <td class="${TD} num text-right">${Number(l.aves_iniciales || 0).toLocaleString('es-BO')}</td><td class="${TD} num">${l.dia_actual ?? '—'}</td>
+      <td class="${TD}">${l.pct_mortalidad ?? 0}% ${chip(l.clasificacion, l.clasificacion === 'ANORMAL' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-800')}</td>
+      <td class="${TD}">${chip(l.estado, CHIP_ESTADO[l.estado])}</td>
+      <td class="${TD} text-right"><button class="${BTN_S}" data-lote="${l.id}" data-lote-cod="${esc(l.codigo)}">Abrir</button></td></tr>`).join('') + '</tbody>';
+}
+async function nuevoLote() {
+  abrirModal('Abrir lote de carne de pollo (CC-01)', `
+    <form id="fLote" class="space-y-3">
+      <div class="grid sm:grid-cols-2 gap-3">
+        <label class="text-sm">Fecha de recepción de pollitos BB (día 1)<input type="date" name="fecha_inicio" value="${hoy()}" class="${INPUT}" required></label>
+        <label class="text-sm">Aves iniciales<input type="number" name="aves_iniciales" value="3000" min="1" class="${INPUT}" required></label>
+      </div>
+      <p class="text-xs text-stone-500">El día 73 (faenado y cierre del ciclo) se calcula automáticamente.</p>
+      <button class="${BTN_P}">Abrir lote</button>
+    </form>`);
+  $('#fLote').onsubmit = intentar(async (ev) => {
+    ev.preventDefault();
+    const f = new FormData(ev.target);
+    const r = await api('/api/lotes', { method: 'POST', body: JSON.stringify({ centro: 'CC-01', fecha_inicio: f.get('fecha_inicio'), aves_iniciales: +f.get('aves_iniciales') }) });
+    cerrarModal(); estado.catalogos = null; aviso(`Lote ${r.codigo} abierto`); mostrarTab(estado.tab);
+  });
+}
+async function verLote(id, codigo) {
+  const [bit, costos] = await Promise.all([api(`/api/lotes/${id}/bitacora`), can('costos.ver') ? api(`/api/lotes/${id}/costos`) : null]);
+  abrirModal(`Lote ${codigo}`, `
+    <div data-perm="lotes.bitacora" ${can('lotes.bitacora') ? '' : 'hidden'} class="mb-6 rounded-xl bg-stone-50 border border-stone-200 p-4">
+      <h4 class="font-medium mb-2">Registrar bitácora del día</h4>
+      <form id="fBit" class="grid sm:grid-cols-5 gap-2 items-end">
+        <label class="text-xs">Fecha<input type="date" name="fecha" value="${hoy()}" class="${INPUT}"></label>
+        <label class="text-xs">Alimento (kg)<input type="number" step="0.1" min="0" name="alimento_kg" value="0" class="${INPUT}"></label>
+        <label class="text-xs">Aves muertas<input type="number" min="0" name="mortalidad" value="0" class="${INPUT}"></label>
+        <label class="text-xs sm:col-span-1">Novedad sanitaria<input name="novedad_sanitaria" class="${INPUT}"></label>
+        <button class="${BTN_P}">Guardar</button>
+      </form></div>
+    ${costos ? `<h4 class="font-medium mb-2">Hoja de costos acumulada</h4>
+      <table class="w-full text-sm mb-6"><thead><tr><th class="${TH}">Sufijo</th><th class="${TH}">Concepto</th><th class="${TH}">Elemento</th><th class="${TH} text-right">Bs</th></tr></thead><tbody>
+      ${costos.filas.map((f) => `<tr><td class="${TD} num">-${esc(f.sufijo)}</td><td class="${TD}">${esc(f.sufijo_nombre)}</td><td class="${TD}">${esc(f.elemento_costo)}</td><td class="${TD} num text-right">${bs(f.monto)}</td></tr>`).join('') || `<tr><td colspan="4" class="${TD} text-stone-400">Sin costos acumulados.</td></tr>`}
+      <tr><td colspan="3" class="${TD} font-semibold">Total acumulado</td><td class="${TD} num text-right font-semibold">${bs(costos.total)}</td></tr></tbody></table>` : ''}
+    <h4 class="font-medium mb-2">Bitácora diaria</h4>
+    <div class="max-h-64 overflow-auto"><table class="w-full text-sm"><thead><tr><th class="${TH}">Día</th><th class="${TH}">Fecha</th><th class="${TH} text-right">Alimento kg</th><th class="${TH} text-right">Mortalidad</th><th class="${TH}">Novedad</th></tr></thead><tbody>
+    ${bit.map((b) => `<tr><td class="${TD} num">${b.dia_ciclo}</td><td class="${TD}">${esc(b.fecha)}</td><td class="${TD} num text-right">${bs(b.alimento_kg)}</td><td class="${TD} num text-right">${b.mortalidad}</td><td class="${TD}">${esc(b.novedad_sanitaria)}</td></tr>`).join('') || `<tr><td colspan="5" class="${TD} text-stone-400">Sin registros.</td></tr>`}
+    </tbody></table></div>`);
+  const f = $('#fBit');
+  if (f) f.onsubmit = intentar(async (ev) => {
+    ev.preventDefault();
+    const d = new FormData(ev.target);
+    const r = await api(`/api/lotes/${id}/bitacora`, { method: 'POST', body: JSON.stringify(Object.fromEntries(d)) });
+    aviso(`Bitácora del día ${r.dia_ciclo} registrada`);
+    await verLote(id, codigo);
+  });
+}
+
+/* ================================== BALANCE ================================== */
+async function cargarBalance() {
+  const f = await api('/api/balance');
+  const t = f.reduce((a, r) => ({ d: a.d + r.suma_debe, h: a.h + r.suma_haber, sd: a.sd + r.saldo_deudor, sa: a.sa + r.saldo_acreedor }), { d: 0, h: 0, sd: 0, sa: 0 });
+  $('#tBalance').innerHTML = `<thead><tr>${['Cuenta', 'Denominación', 'Suma debe', 'Suma haber', 'Saldo deudor', 'Saldo acreedor'].map((h, i) => `<th class="${TH} ${i > 1 ? 'text-right' : ''}">${h}</th>`).join('')}</tr></thead><tbody>` +
+    f.map((r) => `<tr><td class="${TD} num">${esc(r.cuenta_codigo)}</td><td class="${TD}">${esc(r.cuenta_nombre)}</td>${[r.suma_debe, r.suma_haber, r.saldo_deudor, r.saldo_acreedor].map((v) => `<td class="${TD} num text-right">${v ? bs(v) : ''}</td>`).join('')}</tr>`).join('') +
+    `<tr class="font-semibold bg-stone-50"><td class="${TD}" colspan="2">Totales</td>${[t.d, t.h, t.sd, t.sa].map((v) => `<td class="${TD} num text-right">${bs(v)}</td>`).join('')}</tr></tbody>`;
+}
+
+/* ================================ modal y eventos ================================ */
+function abrirModal(titulo, html) { $('#modalTitulo').textContent = titulo; $('#modalCuerpo').innerHTML = html; $('#modal').hidden = false; }
+function cerrarModal() { $('#modal').hidden = true; }
+$('#modalCerrar').onclick = cerrarModal;
+$('#modal').addEventListener('mousedown', (e) => { if (e.target.id === 'modal') cerrarModal(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrarModal(); });
+
+document.addEventListener('click', intentar(async (e) => {
+  const el = e.target.closest('[data-ver],[data-autorizar],[data-lote],[data-tab]');
+  if (!el) return;
+  if (el.dataset.tab) return mostrarTab(el.dataset.tab);
+  if (el.dataset.ver) return verAsiento(el.dataset.ver);
+  if (el.dataset.autorizar) return autorizar(el.dataset.autorizar);
+  if (el.dataset.lote) return verLote(el.dataset.lote, el.dataset.loteCod);
+}));
+$('#btnNuevoAsiento').onclick = intentar(nuevoAsiento);
+$('#btnNuevoLote').onclick = intentar(nuevoLote);
+$('#fNivel').onchange = intentar(cargarCuentas);
+let _t; $('#fBuscar').oninput = () => { clearTimeout(_t); _t = setTimeout(() => cargarCuentas().catch((e) => aviso(e.message, true)), 250); };
+$('#selRol').onchange = (e) => cambiarRol(e.target.value).catch((x) => aviso(x.message, true));
+
+(async function iniciar() {
+  const roles = await (await fetch('/api/roles')).json();
+  $('#selRol').innerHTML = roles.map((r) => `<option value="${r.codigo}">${esc(r.etiqueta)}</option>`).join('');
+  let inicial = new URLSearchParams(location.search).get('rol');
+  try { inicial ||= localStorage.getItem('rolActivo'); } catch {}
+  if (!roles.some((r) => r.codigo === inicial)) inicial = roles[0].codigo;
+  $('#selRol').value = inicial;
+  await cambiarRol(inicial);
+})().catch((e) => aviso(e.message, true));
+</script>
+</body>
+</html>

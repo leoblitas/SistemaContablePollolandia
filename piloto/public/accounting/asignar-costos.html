@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Asignar costos a un lote — Pollolandia Contable</title>
+<style>
+  :root { --bg:#f6f7f4; --card:#fff; --ink:#1d2a1f; --muted:#5e6b60; --line:#d9ded6; --accent:#2f6b3a; --err:#a52a2a; --warn:#8a5a00; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#141a15; --card:#1d251e; --ink:#e8efe8; --muted:#9aa89b; --line:#334034; --accent:#6fbf7d; --err:#ff8a8a; --warn:#f0c060; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; font:15px/1.45 system-ui, sans-serif; background:var(--bg); color:var(--ink); }
+  main { max-width: 1000px; margin: 0 auto; padding: 20px 16px 60px; }
+  h1 { font-size: 1.35rem; margin: 0 0 4px; }
+  p.sub { margin: 0 0 18px; color: var(--muted); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:16px; }
+  .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap:12px; }
+  label { display:block; font-size:.8rem; color:var(--muted); margin-bottom:3px; }
+  input, select { width:100%; padding:8px; border:1px solid var(--line); border-radius:6px; background:transparent; color:inherit; font:inherit; }
+  .tablewrap { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; min-width:860px; }
+  th { text-align:left; font-size:.78rem; color:var(--muted); font-weight:600; padding:4px 6px; }
+  td { padding:4px 6px; vertical-align:top; }
+  td.num input { text-align:right; }
+  button { padding:9px 14px; border-radius:6px; border:1px solid var(--accent); background:var(--accent); color:#fff; font:inherit; cursor:pointer; }
+  button.ghost { background:transparent; color:var(--accent); }
+  button.x { background:transparent; color:var(--err); border-color:var(--line); padding:6px 9px; }
+  .row-actions { display:flex; gap:10px; align-items:center; justify-content:space-between; margin-top:12px; flex-wrap:wrap; }
+  .total { font-weight:600; font-size:1.05rem; }
+  .msg { margin-top:12px; padding:10px 12px; border-radius:6px; border:1px solid var(--line); white-space:pre-wrap; }
+  .msg.ok { border-color:var(--accent); } .msg.err { border-color:var(--err); color:var(--err); } .msg.warn { border-color:var(--warn); color:var(--warn); }
+  small.hint { color:var(--muted); }
+</style>
+</head>
+<body>
+<div style="background:#fff;border-bottom:1px solid #e7e5e4;padding:8px 16px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;font:14px system-ui,sans-serif">
+  <a href="/index.html" style="color:#92400e;font-weight:600;text-decoration:none">&larr; Pollolandia Contable</a>
+  <a href="/operaciones.html" style="color:#57534e;text-decoration:none">Faenado y ventas</a>
+  <a href="/kpis.html" style="color:#57534e;text-decoration:none">Indicadores</a>
+  <a href="/accounting/asignar-costos.html" style="color:#57534e;text-decoration:none">Asignar costos</a>
+  <a href="/reports.html" style="color:#57534e;text-decoration:none">Reportes y auditoría</a>
+  <label style="margin-left:auto">Rol activo (demo, sin clave)
+    <select id="selRolBarra" style="margin-left:6px;padding:4px 8px;border:1px solid #d6d3d1;border-radius:6px"></select></label>
+</div>
+<script>
+(function () {
+  window.ROL_ACTIVO = 'JF';
+  try { window.ROL_ACTIVO = new URLSearchParams(location.search).get('rol') || localStorage.getItem('rolActivo') || 'JF'; } catch (e) {}
+  fetch('/api/roles').then(function (r) { return r.json(); }).then(function (roles) {
+    var s = document.getElementById('selRolBarra');
+    if (!roles.some(function (r) { return r.codigo === window.ROL_ACTIVO; })) window.ROL_ACTIVO = roles[0].codigo;
+    s.innerHTML = roles.map(function (r) { return '<option value="' + r.codigo + '">' + r.etiqueta + '</option>'; }).join('');
+    s.value = window.ROL_ACTIVO;
+    s.onchange = function () { try { localStorage.setItem('rolActivo', s.value); } catch (e) {} location.href = location.pathname; };
+  });
+})();
+</script>
+
+<main>
+  <h1>Asignar costos a un lote de producción (73 días)</h1>
+  <p class="sub">Cada costo se acumula en el centro de costo del lote con su sufijo del Grupo 6 (p. ej. 6.1.01.01-01 pollitos BB) y genera un asiento Debe = Haber.</p>
+
+  <section class="card">
+    <div class="grid">
+      <div><label for="lote">Lote ABIERTO</label><select id="lote"></select></div>
+      <div><label for="fecha">Fecha del asiento</label><input id="fecha" type="date"></div>
+      <div><label for="doc">Documento de respaldo (opcional)</label><input id="doc" placeholder="Factura, nota de entrega…"></div>
+    </div>
+    <p id="loteInfo" class="sub" style="margin:10px 0 0"></p>
+  </section>
+
+  <section class="card">
+    <div class="tablewrap">
+      <table>
+        <thead><tr>
+          <th style="width:23%">Sufijo / elemento</th><th>Detalle</th>
+          <th style="width:9%">Cantidad</th><th style="width:10%">Costo unit. (Bs)</th>
+          <th style="width:11%">Monto (Bs)</th><th style="width:19%">Contrapartida (Haber)</th><th></th>
+        </tr></thead>
+        <tbody id="items"></tbody>
+      </table>
+    </div>
+    <div class="row-actions">
+      <button type="button" class="ghost" id="add">+ Agregar costo</button>
+      <span class="total">Total Debe = Haber: Bs <span id="total">0.00</span></span>
+    </div>
+    <small class="hint">Si completa cantidad y costo unitario, el monto se calcula solo (ej. 3.000 pollitos × Bs 9,00 = Bs 27.000). La contrapartida se propone según el Manual de Costos y puede cambiarse.</small>
+  </section>
+
+  <button type="button" id="enviar">Registrar asiento de costos</button>
+  <div id="resultado"></div>
+</main>
+
+<datalist id="cuentas"></datalist>
+
+<script>
+(function () {
+  // Base de la API: el HTML vive en <base>/ui/asignar-costos.html
+  var BASE = '/api/contabilidad';
+  var sufijos = [], lotes = [];
+  var $ = function (id) { return document.getElementById(id); };
+
+  function api(path, opts) {
+    opts = opts || {};
+    opts.headers = Object.assign({ 'X-Rol': window.ROL_ACTIVO }, opts.headers || {});
+    return fetch(BASE + path, opts).then(function (r) {
+      return r.json().then(function (j) { j._status = r.status; return j; });
+    });
+  }
+  function hoy() {
+    var n = new Date(), p = function (x) { return String(x).padStart(2, '0'); };
+    return n.getFullYear() + '-' + p(n.getMonth() + 1) + '-' + p(n.getDate());
+  }
+  function nota(tipo, texto) {
+    var d = document.createElement('div');
+    d.className = 'msg ' + tipo;
+    d.textContent = texto;
+    return d;
+  }
+  function limpiar() { $('resultado').innerHTML = ''; }
+
+  function cargarSufijos() {
+    var lote = lotes.filter(function (l) { return String(l.id) === $('lote').value; })[0];
+    if (!lote) return Promise.resolve();
+    $('loteInfo').textContent = lote.centro_costo + ' · ciclo ' + lote.numero_ciclo + ' · del ' +
+      lote.fecha_inicio + ' al ' + lote.fecha_fin_prevista + ' (73 días)';
+    return api('/catalogos/sufijos?centro=' + encodeURIComponent(lote.centro_costo)).then(function (j) {
+      sufijos = j.sufijos || [];
+      $('items').innerHTML = '';
+      agregarFila();
+    });
+  }
+
+  function agregarFila() {
+    var tr = document.createElement('tr');
+    var sel = document.createElement('select');
+    sufijos.forEach(function (s) {
+      var o = document.createElement('option');
+      o.value = s.codigo;
+      o.textContent = s.codigo + ' · ' + s.nombre + ' [' + s.elemento_costo + ']';
+      sel.appendChild(o);
+    });
+    function celda(el, cls) { var td = document.createElement('td'); if (cls) td.className = cls; td.appendChild(el); tr.appendChild(td); return el; }
+    function inp(type, ph, step) { var i = document.createElement('input'); i.type = type; if (ph) i.placeholder = ph; if (step) i.step = step; return i; }
+    celda(sel);
+    var det = celda(inp('text', 'Ej. lote de proveedor X'));
+    var cant = celda(inp('number', '0', 'any'), 'num');
+    var cu = celda(inp('number', '0.00', 'any'), 'num');
+    var monto = celda(inp('number', '0.00', 'any'), 'num');
+    var contra = inp('text', 'Código de cuenta'); contra.setAttribute('list', 'cuentas');
+    celda(contra);
+    var del = document.createElement('button'); del.type = 'button'; del.className = 'x'; del.textContent = '✕';
+    del.onclick = function () { tr.remove(); total(); };
+    celda(del);
+
+    function porDefecto() {
+      var s = sufijos.filter(function (x) { return x.codigo === sel.value; })[0];
+      contra.value = (s && s.contrapartida_defecto) || '';
+    }
+    function calcular() {
+      var c = parseFloat(cant.value), u = parseFloat(cu.value);
+      if (c > 0 && u > 0) monto.value = (Math.round(c * u * 100) / 100).toFixed(2);
+      total();
+    }
+    sel.onchange = porDefecto; cant.oninput = calcular; cu.oninput = calcular; monto.oninput = total;
+    tr._get = function () {
+      return { sufijo: sel.value, detalle: det.value || undefined,
+               monto: monto.value, cuenta_contrapartida: contra.value || undefined };
+    };
+    porDefecto();
+    $('items').appendChild(tr);
+  }
+
+  function total() {
+    var t = 0;
+    document.querySelectorAll('#items tr').forEach(function (tr) {
+      t += Math.round((parseFloat(tr._get().monto) || 0) * 100);
+    });
+    $('total').textContent = (t / 100).toFixed(2);
+  }
+
+  function enviar() {
+    limpiar();
+    var items = Array.prototype.map.call(document.querySelectorAll('#items tr'), function (tr) { return tr._get(); })
+      .filter(function (i) { return i.monto !== ''; });
+    if (!$('lote').value) { $('resultado').appendChild(nota('err', 'No hay un lote ABIERTO seleccionado. Cree uno con POST /lotes.')); return; }
+    if (!items.length) { $('resultado').appendChild(nota('err', 'Agregue al menos un costo con monto.')); return; }
+    $('enviar').disabled = true;
+    api('/lotes/' + encodeURIComponent($('lote').value) + '/costos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fecha: $('fecha').value, documento_respaldo: $('doc').value || undefined, items: items })
+    }).then(function (j) {
+      if (j.ok) {
+        var a = j.asiento;
+        $('resultado').appendChild(nota('ok', 'Asiento N.º ' + a.numero + ' contabilizado — Debe ' + a.total_debe.toFixed(2) +
+          ' = Haber ' + a.total_haber.toFixed(2) + ' (Bs).'));
+        (j.advertencias || []).forEach(function (w) { $('resultado').appendChild(nota('warn', w)); });
+        $('items').innerHTML = ''; agregarFila(); total();
+      } else {
+        $('resultado').appendChild(nota('err', j.error || 'No se pudo registrar el asiento'));
+      }
+    }).catch(function (e) {
+      $('resultado').appendChild(nota('err', 'Error de conexión: ' + e.message));
+    }).then(function () { $('enviar').disabled = false; });
+  }
+
+  $('fecha').value = hoy();
+  $('add').onclick = function () { agregarFila(); };
+  $('enviar').onclick = enviar;
+  $('lote').onchange = cargarSufijos;
+
+  api('/catalogos/cuentas').then(function (j) {
+    var dl = $('cuentas');
+    (j.cuentas || []).forEach(function (c) {
+      var o = document.createElement('option'); o.value = c.codigo; o.label = c.nombre; dl.appendChild(o);
+    });
+  });
+  api('/lotes?estado=ABIERTO').then(function (j) {
+    lotes = j.lotes || [];
+    var sel = $('lote');
+    if (!lotes.length) { sel.appendChild(new Option('— No hay lotes abiertos —', '')); return; }
+    lotes.forEach(function (l) { sel.appendChild(new Option(l.codigo, l.id)); });
+    return cargarSufijos();
+  });
+})();
+</script>
+</body>
+</html>

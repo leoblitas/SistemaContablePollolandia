@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reportes y Auditoría Fiscal — Pollolandia Contable</title>
+<style>
+  :root { --bg:#f6f7f4; --card:#fff; --ink:#1d2a1f; --muted:#5e6b60; --line:#d9ded6; --accent:#2f6b3a;
+          --red:#a52a2a; --redbg:#fbeaea; --amber:#8a5a00; --amberbg:#fff4de; --green:#2f6b3a; --greenbg:#e8f3ea; --head:#eef1ea; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#141a15; --card:#1d251e; --ink:#e8efe8; --muted:#9aa89b; --line:#334034; --accent:#6fbf7d;
+            --red:#ff9a9a; --redbg:#3a1f1f; --amber:#f0c060; --amberbg:#3a2f14; --green:#8fd39b; --greenbg:#1d3323; --head:#26312a; }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.45 system-ui, sans-serif; background:var(--bg); color:var(--ink); }
+  main { max-width:1150px; margin:0 auto; padding:18px 16px 60px; }
+  h1 { font-size:1.35rem; margin:0 0 2px; }
+  p.sub { margin:0 0 14px; color:var(--muted); }
+  nav { display:flex; gap:6px; flex-wrap:wrap; margin:14px 0; }
+  nav button { padding:8px 14px; border:1px solid var(--line); background:var(--card); color:var(--ink); border-radius:6px; cursor:pointer; font:inherit; }
+  nav button[aria-selected="true"] { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px; margin-bottom:14px; }
+  .filters { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:10px; align-items:end; }
+  label { display:block; font-size:.78rem; color:var(--muted); margin-bottom:3px; }
+  input, select { width:100%; padding:7px 8px; border:1px solid var(--line); border-radius:6px; background:transparent; color:inherit; font:inherit; }
+  input[type=checkbox] { width:auto; }
+  button.primary { padding:8px 14px; border-radius:6px; border:1px solid var(--accent); background:var(--accent); color:#fff; font:inherit; cursor:pointer; }
+  button.ghost { padding:8px 14px; border-radius:6px; border:1px solid var(--accent); background:transparent; color:var(--accent); font:inherit; cursor:pointer; }
+  .tw { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; font-size:.9rem; }
+  th, td { padding:5px 8px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+  th { background:var(--head); font-size:.78rem; }
+  td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  tr.sum td { font-weight:700; background:var(--head); }
+  tr.anulado td { color:var(--muted); text-decoration:line-through; }
+  .badge { display:inline-block; padding:2px 8px; border-radius:20px; font-size:.78rem; font-weight:700; border:1px solid currentColor; }
+  .ROJO { color:var(--red); } .AMARILLO { color:var(--amber); } .VERDE { color:var(--green); } .SIN_DATOS, .INFORMATIVO { color:var(--muted); }
+  .alert { border:2px solid var(--red); background:var(--redbg); color:var(--red); border-radius:10px; padding:12px 14px; margin:10px 0; }
+  .alert strong { display:block; margin-bottom:4px; }
+  .ok { border:1px solid var(--green); background:var(--greenbg); color:var(--green); border-radius:10px; padding:12px 14px; margin:10px 0; }
+  .note { color:var(--muted); font-size:.82rem; margin-top:8px; }
+  .er td.cuenta { padding-left:28px; } .er td.t1 { padding-left:14px; font-weight:600; }
+  .er tr.titulo td { font-weight:700; background:var(--head); } .er tr.titulo.s1 td { background:transparent; }
+  .er tr.subtotal td { font-weight:700; border-top:2px solid var(--line); }
+  .er tr.resultado td { font-weight:800; background:var(--head); border-top:2px solid var(--accent); }
+  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:12px; }
+  .msg-err { border:1px solid var(--red); color:var(--red); border-radius:6px; padding:10px; }
+  [hidden] { display:none !important; }
+  @media print { nav, .filters, .noprint, #alertaGlobal button { display:none !important; } body { background:#fff; color:#000; } .card { border:none; padding:0; } }
+</style>
+</head>
+<body>
+<div style="background:#fff;border-bottom:1px solid #e7e5e4;padding:8px 16px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;font:14px system-ui,sans-serif">
+  <a href="/index.html" style="color:#92400e;font-weight:600;text-decoration:none">&larr; Pollolandia Contable</a>
+  <a href="/operaciones.html" style="color:#57534e;text-decoration:none">Faenado y ventas</a>
+  <a href="/kpis.html" style="color:#57534e;text-decoration:none">Indicadores</a>
+  <a href="/accounting/asignar-costos.html" style="color:#57534e;text-decoration:none">Asignar costos</a>
+  <a href="/reports.html" style="color:#57534e;text-decoration:none">Reportes y auditoría</a>
+  <label style="margin-left:auto">Rol activo (demo, sin clave)
+    <select id="selRolBarra" style="margin-left:6px;padding:4px 8px;border:1px solid #d6d3d1;border-radius:6px"></select></label>
+</div>
+<script>
+(function () {
+  window.ROL_ACTIVO = 'JF';
+  try { window.ROL_ACTIVO = new URLSearchParams(location.search).get('rol') || localStorage.getItem('rolActivo') || 'JF'; } catch (e) {}
+  fetch('/api/roles').then(function (r) { return r.json(); }).then(function (roles) {
+    var s = document.getElementById('selRolBarra');
+    if (!roles.some(function (r) { return r.codigo === window.ROL_ACTIVO; })) window.ROL_ACTIVO = roles[0].codigo;
+    s.innerHTML = roles.map(function (r) { return '<option value="' + r.codigo + '">' + r.etiqueta + '</option>'; }).join('');
+    s.value = window.ROL_ACTIVO;
+    s.onchange = function () { try { localStorage.setItem('rolActivo', s.value); } catch (e) {} location.href = location.pathname; };
+  });
+})();
+</script>
+
+<main>
+  <h1>Reportes y Auditoría Fiscal</h1>
+  <p class="sub">Cooperativa Agropecuaria Pollolandia R.L. · Formatos MA-04 y BS-05 y modelo de Estado de Resultados del MAN-006 · Control RAU según PET-RAU-001</p>
+
+  <div id="alertaGlobal" hidden></div>
+
+  <div class="card noprint">
+    <div class="filters">
+      <div><label for="ejercicio">Ejercicio fiscal</label><select id="ejercicio"></select></div>
+    </div>
+  </div>
+
+  <nav role="tablist" class="noprint">
+    <button role="tab" data-tab="mayor" aria-selected="true">Libro Mayor</button>
+    <button role="tab" data-tab="balance" aria-selected="false">Balance de Comprobación</button>
+    <button role="tab" data-tab="er" aria-selected="false">Estado de Resultados</button>
+    <button role="tab" data-tab="rau" aria-selected="false">Auditoría RAU</button>
+  </nav>
+
+  <!-- LIBRO MAYOR -->
+  <section id="tab-mayor" class="card">
+    <div class="filters">
+      <div><label for="mCuenta">Cuenta (nivel 1 a 4)</label><input id="mCuenta" list="dlCuentas" placeholder="Ej. 1.1.03 o 1.1.03.01"></div>
+      <div><label for="mDesde">Desde</label><input id="mDesde" type="date"></div>
+      <div><label for="mHasta">Hasta</label><input id="mHasta" type="date"></div>
+      <div><button class="primary" id="mGo" type="button">Consultar Mayor</button></div>
+    </div>
+    <div id="mOut"></div>
+  </section>
+
+  <!-- BALANCE DE COMPROBACIÓN -->
+  <section id="tab-balance" class="card" hidden>
+    <div class="filters">
+      <div><label for="bDesde">Desde</label><input id="bDesde" type="date"></div>
+      <div><label for="bHasta">Al</label><input id="bHasta" type="date"></div>
+      <div><label for="bNivel">Nivel de detalle</label>
+        <select id="bNivel"><option value="4" selected>4 — Cuenta</option><option value="3">3 — Subgrupo</option><option value="2">2 — Clasificación</option><option value="1">1 — Grupo</option></select></div>
+      <div><label><input id="bAntes" type="checkbox"> Antes de ajustes (BS-05)</label></div>
+      <div><button class="primary" id="bGo" type="button">Generar Balance</button></div>
+    </div>
+    <div id="bOut"></div>
+  </section>
+
+  <!-- ESTADO DE RESULTADOS -->
+  <section id="tab-er" class="card" hidden>
+    <div class="filters">
+      <div><label for="eVista">Vista</label><select id="eVista"><option value="consolidado">Total consolidado</option></select></div>
+      <div><label for="eDesde">Desde (opcional)</label><input id="eDesde" type="date"></div>
+      <div><label for="eHasta">Hasta (opcional)</label><input id="eHasta" type="date"></div>
+      <div><button class="primary" id="eGo" type="button">Generar Estado</button></div>
+    </div>
+    <div id="eOut"></div>
+  </section>
+
+  <!-- AUDITORÍA RAU -->
+  <section id="tab-rau" class="card" hidden>
+    <div class="filters">
+      <div><label for="rDesde">Desde</label><input id="rDesde" type="date"></div>
+      <div><label for="rHasta">Hasta</label><input id="rHasta" type="date"></div>
+      <div><button class="primary" id="rGo" type="button">Ejecutar auditoría</button></div>
+    </div>
+    <div id="rOut"></div>
+  </section>
+
+  <div class="noprint" style="margin-top:6px"><button class="ghost" type="button" onclick="window.print()">Imprimir / guardar PDF</button></div>
+</main>
+<datalist id="dlCuentas"></datalist>
+
+<script>
+(function () {
+  var BASE = '/api/reportes';
+  var $ = function (id) { return document.getElementById(id); };
+  var nf = new Intl.NumberFormat('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  function fmt(n) { n = Number(n) || 0; return n < 0 ? '(' + nf.format(-n) + ')' : nf.format(n); }
+  function h(tag, attrs) {
+    var e = document.createElement(tag);
+    if (attrs) Object.keys(attrs).forEach(function (k) {
+      if (k === 'class') e.className = attrs[k]; else if (k === 'text') e.textContent = attrs[k]; else e.setAttribute(k, attrs[k]);
+    });
+    for (var i = 2; i < arguments.length; i++) {
+      var c = arguments[i];
+      if (c === null || c === undefined) continue;
+      (Array.isArray(c) ? c : [c]).forEach(function (x) {
+        e.appendChild(typeof x === 'string' ? document.createTextNode(x) : x);
+      });
+    }
+    return e;
+  }
+  function td(text, cls) { return h('td', cls ? { class: cls, text: text } : { text: text }); }
+  function th(text, cls) { return h('th', cls ? { class: cls, text: text } : { text: text }); }
+  function wrapTable(t) { return h('div', { class: 'tw' }, t); }
+  function api(path, params) {
+    var qs = Object.keys(params || {}).filter(function (k) { return params[k] !== '' && params[k] !== null && params[k] !== undefined; })
+      .map(function (k) { return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]); }).join('&');
+    return fetch(BASE + path + (qs ? '?' + qs : ''), { headers: { 'X-Rol': window.ROL_ACTIVO } }).then(function (r) { return r.json(); });
+  }
+  function error(out, msg) { out.innerHTML = ''; out.appendChild(h('div', { class: 'msg-err', text: msg })); }
+  function ej() { return $('ejercicio').value; }
+
+  // ---------- pestañas ----------
+  document.querySelectorAll('nav button').forEach(function (b) {
+    b.onclick = function () {
+      document.querySelectorAll('nav button').forEach(function (x) { x.setAttribute('aria-selected', x === b ? 'true' : 'false'); });
+      ['mayor', 'balance', 'er', 'rau'].forEach(function (t) { $('tab-' + t).hidden = (t !== b.dataset.tab); });
+    };
+  });
+
+  // ---------- LIBRO MAYOR (MA-04) ----------
+  $('mGo').onclick = function () {
+    var out = $('mOut'); out.textContent = 'Consultando…';
+    api('/libro-mayor', { cuenta: $('mCuenta').value.trim().split(' ')[0], desde: $('mDesde').value, hasta: $('mHasta').value, ejercicio_id: ej() }).then(function (j) {
+      if (!j.ok) return error(out, j.error);
+      var r = j.reporte; out.innerHTML = '';
+      out.appendChild(h('p', { class: 'note', text: r.formato + ' · ' + r.filtro.cuenta + ' — ' + r.filtro.nombre + ' (nivel ' + r.filtro.nivel + ') · del ' + r.filtro.desde + ' al ' + r.filtro.hasta }));
+      if (!r.cuentas.length) out.appendChild(h('p', { text: 'La cuenta no tiene movimientos hasta la fecha indicada.' }));
+      r.cuentas.forEach(function (c) {
+        var t = h('table', null, h('thead', null, h('tr', null, th('Fecha'), th('N.° Comp.'), th('Tipo'), th('Cód. auxiliar'), th('Glosa / detalle'), th('Doc. ref.'), th('Debe', 'n'), th('Haber', 'n'), th('Saldo', 'n'), th('D/A'))));
+        var tb = h('tbody');
+        tb.appendChild(h('tr', { class: 'sum' }, td(''), td(''), td(''), td(''), td('SALDO ANTERIOR / TRASLADO'), td(''), td(''), td(''), td(fmt(c.saldo_anterior), 'n'), td(c.saldo_anterior_da)));
+        c.movimientos.forEach(function (m) {
+          tb.appendChild(h('tr', m.estado === 'ANULADO' ? { class: 'anulado' } : null,
+            td(m.fecha), td(String(m.comprobante)), td(m.tipo + (m.estado === 'ANULADO' ? ' (anulado)' : '')), td(m.auxiliar || ''), td(m.glosa || ''), td(m.doc_ref || ''),
+            td(m.debe ? fmt(m.debe) : '', 'n'), td(m.haber ? fmt(m.haber) : '', 'n'), td(fmt(m.saldo), 'n'), td(m.da)));
+        });
+        tb.appendChild(h('tr', { class: 'sum' }, td(''), td(''), td(''), td(''), td('SUMAS DEL PERÍODO Y SALDO FINAL'), td(''), td(fmt(c.suma_debe), 'n'), td(fmt(c.suma_haber), 'n'), td(fmt(c.saldo_final), 'n'), td(c.saldo_final_da)));
+        t.appendChild(tb);
+        out.appendChild(h('h3', { text: c.codigo + ' — ' + c.nombre + ' · naturaleza ' + c.naturaleza }));
+        out.appendChild(wrapTable(t));
+      });
+      if (r.truncado) out.appendChild(h('p', { class: 'note', text: 'Se muestran los primeros 5.000 movimientos de cada cuenta; acote el rango de fechas.' }));
+      out.appendChild(h('p', { class: 'note', text: r.nota }));
+    });
+  };
+
+  // ---------- BALANCE DE COMPROBACIÓN (BS-05) ----------
+  $('bGo').onclick = function () {
+    var out = $('bOut'); out.textContent = 'Generando…';
+    api('/balance-comprobacion', { desde: $('bDesde').value, hasta: $('bHasta').value, nivel: $('bNivel').value, antes_de_ajustes: $('bAntes').checked ? 1 : '', ejercicio_id: ej() }).then(function (j) {
+      if (!j.ok) return error(out, j.error);
+      var r = j.reporte; out.innerHTML = '';
+      out.appendChild(h('p', { class: 'note', text: r.formato + ' · ejercicio ' + r.filtro.ejercicio + ' · del ' + r.filtro.desde + ' al ' + r.filtro.hasta + (r.filtro.antes_de_ajustes ? ' · antes de ajustes' : '') }));
+      var t = h('table', null, h('thead', null,
+        h('tr', null, th('N.°'), th('Código'), th('Denominación de la cuenta'), th('Sumas Debe', 'n'), th('Sumas Haber', 'n'), th('Saldo deudor', 'n'), th('Saldo acreedor', 'n'))));
+      var tb = h('tbody');
+      r.cuentas.forEach(function (c) {
+        tb.appendChild(h('tr', null, td(String(c.n)), td(c.codigo), td(c.nombre), td(fmt(c.debe), 'n'), td(fmt(c.haber), 'n'), td(c.deudor ? fmt(c.deudor) : '', 'n'), td(c.acreedor ? fmt(c.acreedor) : '', 'n')));
+      });
+      tb.appendChild(h('tr', { class: 'sum' }, td(''), td(''), td('SUMAS IGUALES Bs.'), td(fmt(r.totales.debe), 'n'), td(fmt(r.totales.haber), 'n'), td(fmt(r.totales.deudor), 'n'), td(fmt(r.totales.acreedor), 'n')));
+      t.appendChild(tb); out.appendChild(wrapTable(t));
+      var v = r.verificacion;
+      out.appendChild(h('p', null,
+        h('span', { class: 'badge ' + (v.sumas_debe_igual_haber ? 'VERDE' : 'ROJO'), text: (v.sumas_debe_igual_haber ? '✔' : '✖') + ' Sumas Debe = Sumas Haber' }), ' ',
+        h('span', { class: 'badge ' + (v.saldos_deudores_igual_acreedores ? 'VERDE' : 'ROJO'), text: (v.saldos_deudores_igual_acreedores ? '✔' : '✖') + ' Saldos deudores = acreedores' }),
+        ' Diferencia Bs.: ' + fmt(Math.max(v.diferencia_sumas, v.diferencia_saldos))));
+    });
+  };
+
+  // ---------- ESTADO DE RESULTADOS (MAN-006 §18.2) ----------
+  $('eGo').onclick = function () {
+    var out = $('eOut'); out.textContent = 'Generando…';
+    api('/estado-resultados', { lote: $('eVista').value, desde: $('eDesde').value, hasta: $('eHasta').value, ejercicio_id: ej() }).then(function (j) {
+      if (!j.ok) return error(out, j.error);
+      var r = j.reporte; out.innerHTML = '';
+      out.appendChild(h('div', { style: 'text-align:center;margin:6px 0 12px' },
+        h('strong', { text: 'COOPERATIVA AGROPECUARIA POLLOLANDIA R.L.' }), h('br'),
+        h('strong', { text: 'ESTADO DE RESULTADOS' }), h('br'),
+        h('span', { class: 'note', text: r.vista === 'LOTE'
+          ? 'Lote ' + r.lote.codigo + ' (' + r.lote.centro_costo + ', 73 días: ' + r.lote.fecha_inicio + ' a ' + r.lote.fecha_fin_prevista + ') · Expresado en Bolivianos'
+          : 'Ejercicio ' + r.periodo.ejercicio + ' · del ' + r.periodo.desde + ' al ' + r.periodo.hasta + ' · Expresado en Bolivianos' })));
+      var t = h('table', { class: 'er' }, h('thead', null, h('tr', null, th('Concepto'), th('Bs', 'n'))));
+      var tb = h('tbody');
+      r.filas.forEach(function (f) {
+        if (f.tipo === 'titulo') {
+          tb.appendChild(h('tr', { class: 'titulo' + (f.sangria ? ' s1' : '') }, td(f.texto, f.sangria ? 't1' : ''), td('')));
+        } else if (f.tipo === 'cuenta') {
+          tb.appendChild(h('tr', null, td(f.texto + '  (' + f.codigo + ')', 'cuenta'), td(fmt(f.monto), 'n')));
+        } else {
+          tb.appendChild(h('tr', { class: f.tipo }, td(f.texto), td(fmt(f.monto), 'n')));
+        }
+      });
+      t.appendChild(tb); out.appendChild(wrapTable(t));
+      if (r.memo_costo_en_proceso) {
+        out.appendChild(h('p', { class: 'note', text: 'Memo — costo acumulado en proceso del lote: Bs ' + fmt(r.memo_costo_en_proceso.monto) + '. ' + r.memo_costo_en_proceso.texto }));
+      }
+      r.notas.forEach(function (n) { out.appendChild(h('p', { class: 'note', text: n })); });
+    });
+  };
+
+  // ---------- AUDITORÍA RAU ----------
+  function renderRau(r, out, soloBanner) {
+    var cont = soloBanner ? out : h('div');
+    if (r.alerta_roja) {
+      cont.appendChild(h('div', { class: 'alert', role: 'alert' }, h('strong', { text: '⚠ ALERTA FISCAL RAU — RIESGO DE EXCLUSIÓN DEL RÉGIMEN' }), r.mensaje));
+    } else if (!soloBanner) {
+      cont.appendChild(h('div', { class: 'ok', text: r.mensaje }));
+    }
+    if (soloBanner) return;
+    var c = r.control_servicios_a_terceros;
+    cont.appendChild(h('h3', { text: 'Control 1 — Servicios a terceros / Maquila' }));
+    cont.appendChild(h('p', { class: 'note', text: c.regla + ' · líneas de ingreso revisadas: ' + c.lineas_de_ingreso_revisadas + ' · términos vigilados: ' + c.terminos_vigilados.map(function (x) { return x.termino; }).join(', ') }));
+    if (c.hallazgos.length) {
+      var t = h('table', null, h('thead', null, h('tr', null, th('Severidad'), th('Fecha'), th('Comp.'), th('Estado'), th('Cuenta'), th('Monto Bs', 'n'), th('Coincidencia'))));
+      var tb = h('tbody');
+      c.hallazgos.forEach(function (x) {
+        tb.appendChild(h('tr', null,
+          h('td', null, h('span', { class: 'badge ' + x.severidad, text: x.severidad })),
+          td(x.fecha), td(String(x.comprobante)), td(x.estado), td(x.cuenta), td(fmt(x.monto), 'n'),
+          td(x.coincidencias.map(function (m) { return '«' + m.termino + '» en ' + m.campo + ': "' + m.texto + '"'; }).join(' | '))));
+      });
+      t.appendChild(tb); cont.appendChild(wrapTable(t));
+    }
+    if (c.cuentas_con_rotulo_en_el_plan.length) {
+      cont.appendChild(h('p', { class: 'alert', text: 'Cuentas de ingreso del plan con un rótulo prohibido: ' + c.cuentas_con_rotulo_en_el_plan.map(function (x) { return x.codigo + ' ' + x.nombre; }).join('; ') }));
+    }
+    cont.appendChild(h('h3', { text: 'Control 2 — Indicadores de uso propio del alimento' }));
+    var cards = h('div', { class: 'cards' });
+    r.indicadores.forEach(function (i) {
+      cards.appendChild(h('div', { class: 'card' },
+        h('strong', { text: i.codigo + ' · ' + i.nombre }), h('br'),
+        h('span', { style: 'font-size:1.4rem;font-weight:700', text: i.valor === null ? '—' : nf.format(i.valor) + ' %' }), ' ',
+        h('span', { class: 'badge ' + i.semaforo, text: i.semaforo.replace('_', ' ') }),
+        h('p', { class: 'note', text: 'Meta: ' + i.meta + '. ' + i.formula + '. Fuente: ' + i.fuente })));
+    });
+    cont.appendChild(cards);
+    cont.appendChild(h('h3', { text: 'Controles que este módulo no puede evaluar' }));
+    cont.appendChild(h('ul', null, r.no_evaluables.map(function (x) { return h('li', { text: x }); })));
+    cont.appendChild(h('h3', { text: 'Base normativa' }));
+    cont.appendChild(h('ul', null, r.base_normativa.map(function (x) { return h('li', { text: x }); })));
+    out.innerHTML = ''; out.appendChild(cont);
+  }
+
+  $('rGo').onclick = function () {
+    var out = $('rOut'); out.textContent = 'Auditando…';
+    api('/auditoria-rau', { desde: $('rDesde').value, hasta: $('rHasta').value, ejercicio_id: ej() }).then(function (j) {
+      if (!j.ok) return error(out, j.error);
+      renderRau(j.reporte, out, false); actualizarBanner(j.reporte);
+    });
+  };
+
+  function actualizarBanner(r) {
+    var g = $('alertaGlobal'); g.innerHTML = '';
+    if (r.alerta_roja) { g.hidden = false; renderRau(r, g, true); } else { g.hidden = true; }
+  }
+
+  // ---------- Arranque ----------
+  api('/catalogos').then(function (j) {
+    if (!j.ok) return;
+    var sel = $('ejercicio');
+    j.ejercicios.forEach(function (e) { sel.appendChild(new Option(e.codigo + ' (' + e.estado + ')', e.id)); });
+    var dl = $('dlCuentas');
+    j.cuentas.forEach(function (c) { var o = document.createElement('option'); o.value = c.codigo; o.label = 'N' + c.nivel + ' · ' + c.nombre; dl.appendChild(o); });
+    j.lotes.forEach(function (l) { $('eVista').appendChild(new Option('Lote ' + l.codigo + ' (' + l.estado + ')', l.id)); });
+    return api('/auditoria-rau', { ejercicio_id: sel.value }).then(function (a) { if (a.ok) actualizarBanner(a.reporte); });
+  });
+})();
+</script>
+</body>
+</html>

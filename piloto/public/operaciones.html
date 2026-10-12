@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Faenado y ventas — Pollolandia Contable</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: { brand: { 50: '#fff8eb', 100: '#feefc7', 500: '#d97706', 600: '#b45309', 700: '#92400e' } } } } };
+  </script>
+  <style>[hidden]{display:none!important} .num{font-variant-numeric:tabular-nums}</style>
+</head>
+<body class="bg-stone-50 text-stone-800 min-h-screen">
+<div id="cabecera"></div>
+
+<main class="max-w-7xl mx-auto px-4 py-6 space-y-8">
+
+  <!-- ===================== 1. CIERRE DE CICLO / FAENADO ===================== -->
+  <section id="seccFaenado" class="space-y-4">
+    <div>
+      <h2 class="text-lg font-semibold">1 · Cierre de ciclo y faenado (día 73)</h2>
+      <p class="text-sm text-stone-600">
+        MPP PR-FIN-04 / PR-FIN-06 y Ciclo 3 (Anexo 7). El costo acumulado del centro 6.1.01.01 (Activo Biológico en proceso) se transfiere
+        a <b>1.1.03.12 Inventario de Carne de Pollo</b>. El cierre lo prepara el Contador y lo autoriza la Gerencia General.
+      </p>
+    </div>
+
+    <div class="bg-white rounded-xl border border-stone-200 p-5 space-y-4">
+      <label class="block max-w-md text-sm">
+        <span class="text-stone-600">Lote a cerrar</span>
+        <select id="selLote" class="mt-1 border border-stone-300 rounded-lg bg-white px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-500"></select>
+      </label>
+      <p id="sinLotes" hidden class="text-sm text-stone-500">No hay lotes abiertos pendientes de cierre.</p>
+      <div id="resumenLote" class="space-y-4"></div>
+    </div>
+  </section>
+
+  <!-- ============================ 2. VENTAS ============================ -->
+  <section id="seccVentas" data-perm="ventas.ver" class="space-y-4">
+    <div>
+      <h2 class="text-lg font-semibold">2 · Ventas HORECA y al contado</h2>
+      <p class="text-sm text-stone-600">
+        POL-05 · PR-FIN-08 · PR-FIN-09 · Ciclo 4 (Anexo 8). Solo el sector <b>HORECA</b> compra a crédito, con plazo máximo de <b>1 día calendario</b>
+        (2026–2027), comprobante de entrega y compromiso de pago firmado. El resto compra al contado. No se vende sin comprobante.
+      </p>
+    </div>
+
+    <div class="grid lg:grid-cols-3 gap-4">
+      <div id="boxVenta" data-perm="ventas.registrar" class="lg:col-span-2 bg-white rounded-xl border border-stone-200 p-5">
+        <h3 class="font-medium mb-3">Registrar venta</h3>
+        <form id="formVenta" class="grid sm:grid-cols-2 gap-3 text-sm">
+          <label>Fecha <input id="vFecha" type="date" required class="mt-1 border border-stone-300 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-500"></label>
+          <label>Cliente
+            <select id="vCliente" required class="mt-1 border border-stone-300 rounded-lg bg-white px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-500"></select>
+          </label>
+          <label>Producto
+            <select id="vProducto" class="mt-1 border border-stone-300 rounded-lg bg-white px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-500">
+              <option value="CARNE">Carne de pollo</option>
+              <option value="GALLINAZA">Gallinaza</option>
+              <option value="ALIMENTO">Alimento balanceado excedente (desde 2027)</option>
+            </select>
+          </label>
+          <label id="vLoteBox">Lote (stock en kg)
+            <select id="vLote" class="mt-1 border border-stone-300 rounded-lg bg-white px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-500"></select>
+          </label>
+          <label>Cantidad <input id="vCantidad" type="number" step="0.01" min="0.01" required class="mt-1 border border-stone-300 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-500"></label>
+          <label>Precio unitario (Bs) <input id="vPrecio" type="number" step="0.0001" min="0.0001" required class="mt-1 border border-stone-300 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-500"></label>
+          <label>Condición
+            <select id="vCondicion" class="mt-1 border border-stone-300 rounded-lg bg-white px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-500">
+              <option value="CONTADO">Al contado</option>
+              <option value="CREDITO">Crédito HORECA (1 día)</option>
+            </select>
+          </label>
+          <label>Nº comprobante (nota de entrega / recibo) <input id="vComprobante" required class="mt-1 border border-stone-300 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-500"></label>
+          <label id="vMedioBox">Medio de pago
+            <select id="vMedio" class="mt-1 border border-stone-300 rounded-lg bg-white px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-500">
+              <option value="EFECTIVO">Efectivo</option>
+              <option value="TRANSFERENCIA">Transferencia bancaria</option>
+              <option value="DEPOSITO">Depósito bancario</option>
+              <option value="CHEQUE_NOMINATIVO">Cheque nominativo (al día)</option>
+              <option value="QR_ACH">QR / ACH</option>
+            </select>
+          </label>
+          <label id="vCompromisoBox" hidden class="sm:col-span-2 flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 p-3">
+            <input id="vCompromiso" type="checkbox" class="mt-0.5">
+            <span>El comprador firmó el <b>compromiso de pago</b> y el comprobante de entrega (obligatorio para el crédito, POL-05). Vence a 1 día calendario.</span>
+          </label>
+          <div class="sm:col-span-2 flex items-center gap-3">
+            <button class="bg-brand-500 hover:bg-brand-600 text-white rounded-lg px-4 py-2 text-sm font-medium">Registrar venta y generar asiento</button>
+            <span id="vTotal" class="text-sm text-stone-600 num"></span>
+          </div>
+        </form>
+
+        <details class="mt-4 text-sm">
+          <summary class="cursor-pointer text-brand-700">+ Nuevo cliente</summary>
+          <form id="formCliente" class="mt-3 grid sm:grid-cols-4 gap-3 items-end">
+            <label class="sm:col-span-2">Nombre <input id="cNombre" required class="mt-1 border border-stone-300 rounded-lg px-3 py-2 text-sm w-full"></label>
+            <label>Sector
+              <select id="cTipo" class="mt-1 border border-stone-300 rounded-lg bg-white px-3 py-2 text-sm w-full">
+                <option value="HORECA">HORECA (hoteles, restaurantes, catering)</option>
+                <option value="FRIAL">Frial</option>
+                <option value="MERCADO_POPULAR">Mercado popular</option>
+                <option value="CONSUMIDOR">Consumidor final</option>
+                <option value="AGRICULTOR">Agricultor</option>
+              </select>
+            </label>
+            <button class="rounded-lg px-3 py-2 text-sm font-medium border border-stone-300 hover:bg-stone-100">Guardar cliente</button>
+          </form>
+        </details>
+      </div>
+
+      <div class="bg-white rounded-xl border border-stone-200 p-5">
+        <h3 class="font-medium mb-3">Stock de carne (producto terminado)</h3>
+        <div id="stock" class="text-sm space-y-2"></div>
+        <p class="text-xs text-stone-500 mt-3">
+          Costo de venta = kg vendidos × costo unitario del lote (Bs/kg de peso canal, MAN-01).
+        </p>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl border border-stone-200 overflow-x-auto">
+      <div class="px-5 py-3 flex items-center justify-between">
+        <h3 class="font-medium">Ventas y cuentas por cobrar</h3>
+        <span id="resumenCxC" class="text-sm text-stone-600"></span>
+      </div>
+      <table class="w-full text-sm">
+        <thead><tr id="thVentas"></tr></thead>
+        <tbody id="tbVentas"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<script src="app-common.js"></script>
+<script>
+const CHIP_VENTA = { COBRADA: 'bg-emerald-100 text-emerald-800', PENDIENTE: 'bg-amber-100 text-amber-800' };
+let cierre = null, stockCache = [], clientes = [];
+
+/* ============================ 1. FAENADO ============================ */
+async function cargarLotesCierre() {
+  const lotes = await api('/api/operaciones/lotes-cierre');
+  const sel = $('#selLote');
+  const previo = sel.value;
+  sel.innerHTML = lotes.map((l) => `<option value="${l.id}">${esc(l.codigo)} — día 73: ${l.fecha_dia_73}${l.estado_faenado ? ' · ' + l.estado_faenado.replace('_', ' ').toLowerCase() : ''}</option>`).join('');
+  $('#sinLotes').hidden = lotes.length > 0;
+  sel.hidden = lotes.length === 0;
+  if (lotes.some((l) => String(l.id) === previo)) sel.value = previo;
+  if (lotes.length) await cargarResumen(sel.value); else $('#resumenLote').innerHTML = '';
+}
+
+async function cargarResumen(id) {
+  cierre = await api(`/api/operaciones/lotes/${id}/cierre`);
+  const { lote, mortalidad: m, costos, faenado: f } = cierre;
+  const claseMort = m.clasificacion === 'NORMAL' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800';
+  let html = `
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
+      <div class="rounded-lg bg-stone-50 border border-stone-200 p-3"><p class="text-xs text-stone-500">Aves iniciales</p><p class="text-lg font-semibold num">${num(lote.aves_iniciales, 0)}</p></div>
+      <div class="rounded-lg bg-stone-50 border border-stone-200 p-3"><p class="text-xs text-stone-500">Mortalidad acumulada</p>
+        <p class="text-lg font-semibold num">${num(m.acumulada, 0)} <span class="text-sm font-normal">(${num(m.pct)} %)</span></p>
+        <p class="mt-1">${chip(m.clasificacion, claseMort)} <span class="text-xs text-stone-500">tolerancia 5 % = ${num(m.tolerancia_5pct, 0)} aves</span></p></div>
+      <div class="rounded-lg bg-stone-50 border border-stone-200 p-3"><p class="text-xs text-stone-500">Alimento consumido (bitácora)</p><p class="text-lg font-semibold num">${num(cierre.alimento_consumido_kg)} kg</p>
+        <p class="text-xs text-stone-500">${cierre.bitacora.dias_registrados} días registrados · último día ${cierre.bitacora.ultimo_dia ?? '—'}</p></div>
+      <div class="rounded-lg bg-stone-50 border border-stone-200 p-3"><p class="text-xs text-stone-500">Costo acumulado (6.1.01.01)</p><p class="text-lg font-semibold num">Bs ${bs(cierre.costo_total_acumulado)}</p></div>
+    </div>
+    <div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr>
+      <th class="${TH}">Sufijo</th><th class="${TH}">Concepto</th><th class="${TH}">Elemento</th><th class="${TH} text-right">Monto (Bs)</th></tr></thead><tbody>
+      ${costos.map((c) => `<tr><td class="${TD}">-${esc(c.sufijo)}</td><td class="${TD}">${esc(c.sufijo_nombre)}</td><td class="${TD}">${esc(c.elemento_costo)}</td><td class="${TD} text-right num">${bs(c.monto)}</td></tr>`).join('')
+        || `<tr><td class="${TD} text-stone-500" colspan="4">Sin costos acumulados.</td></tr>`}
+    </tbody></table></div>`;
+
+  if (f) {
+    html += `
+    <div class="rounded-lg border ${f.estado === 'APROBADO' ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'} p-4 text-sm space-y-2">
+      <p class="font-medium">Faenado del ${esc(f.fecha_faenado)} — ${chip(f.estado === 'APROBADO' ? 'Aprobado' : 'Pendiente de aprobación de la GG', f.estado === 'APROBADO' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800')}</p>
+      <p>${num(f.aves_faenadas, 0)} aves faenadas · peso vivo ${num(f.peso_vivo_kg)} kg · peso canal ${num(f.peso_canal_kg)} kg · merma ${num(f.merma_kg)} kg · costo transferido Bs ${bs(f.costo_total)} (asiento Nº ${f.asiento_cierre_id}).</p>
+      <p class="text-xs text-stone-600">Asiento: Dr 1.1.03.12 Inventario de Carne de Pollo / Cr 6.1.01.01 Activo Biológico en proceso, por sufijo.</p>
+      <div class="flex gap-2">
+        <button data-perm="lotes.aprobar_cierre" id="btnAprobar" ${f.estado === 'APROBADO' ? 'hidden' : ''} class="${BTN_P}">Aprobar cierre de ciclo (GG)</button>
+        <button data-perm="lotes.cerrar" id="btnDescartar" ${f.estado === 'APROBADO' ? 'hidden' : ''} class="${BTN_S}">Descartar y corregir</button>
+      </div>
+      ${f.estado !== 'APROBADO' ? `<p class="text-xs text-stone-500">Quien registra no aprueba (MOF 3.2): si usted registró con el rol Contador, cambie a Gerente General para aprobar.</p>` : ''}
+    </div>`;
+  } else {
+    html += `
+    <form id="formFaenado" data-perm="lotes.cerrar" class="rounded-lg border border-stone-200 p-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
+      <h3 class="font-medium sm:col-span-2 lg:col-span-4">Registrar faenado (FIN-TRA-05)</h3>
+      <label>Fecha de faenado (día 73) <input id="fFecha" type="date" required value="${esc(lote.fecha_dia_73)}" class="mt-1 border border-stone-300 rounded-lg px-3 py-2 text-sm w-full"></label>
+      <label>Aves faenadas <input id="fAves" type="number" min="0" step="1" required value="${cierre.aves_vivas_esperadas}" class="mt-1 border border-stone-300 rounded-lg px-3 py-2 text-sm w-full"></label>
+      <label>Peso vivo (kg) <input id="fVivo" type="number" min="0.01" step="0.01" required class="mt-1 border border-stone-300 rounded-lg px-3 py-2 text-sm w-full"></label>
+      <label>Peso canal — producto terminado (kg) <input id="fCanal" type="number" min="0.01" step="0.01" required class="mt-1 border border-stone-300 rounded-lg px-3 py-2 text-sm w-full"></label>
+      <label class="sm:col-span-2 lg:col-span-4 ${m.anormal > 0 ? '' : 'opacity-70'}">Informe veterinario ${m.anormal > 0 ? '(<b>obligatorio</b>: mortalidad anormal)' : '(solo si hay mortalidad anormal)'}
+        <textarea id="fInforme" rows="2" class="mt-1 border border-stone-300 rounded-lg px-3 py-2 text-sm w-full"></textarea></label>
+      <div class="sm:col-span-2 lg:col-span-4 flex items-center gap-3">
+        <button class="bg-brand-500 hover:bg-brand-600 text-white rounded-lg px-4 py-2 text-sm font-medium">Registrar faenado y preparar asiento de cierre</button>
+        <span class="text-xs text-stone-500">Conciliación (FIN-TRA-06): aves iniciales = mortalidad normal + anormal + aves faenadas. Merma = peso vivo − peso canal.</span>
+      </div>
+    </form>
+    ${can('lotes.cerrar') ? '' : '<p class="text-sm text-stone-500">El rol activo no registra faenados (solo el Contador, MOF 2.2).</p>'}`;
+  }
+  $('#resumenLote').innerHTML = html;
+  $$('[data-perm]', $('#resumenLote')).forEach((el) => (el.hidden = el.hidden || !can(el.dataset.perm)));
+
+  const form = $('#formFaenado');
+  if (form) form.onsubmit = intentar(async (e) => {
+    e.preventDefault();
+    const r = await post(`/api/operaciones/lotes/${id}/faenado`, {
+      fecha_faenado: $('#fFecha').value, aves_faenadas: Number($('#fAves').value),
+      peso_vivo_kg: Number($('#fVivo').value), peso_canal_kg: Number($('#fCanal').value),
+      informe_veterinario: $('#fInforme').value.trim() || undefined,
+    });
+    aviso(r.mensaje + (r.advertencia ? ' ' + r.advertencia : ''));
+    await cargarLotesCierre();
+  });
+  if ($('#btnAprobar')) $('#btnAprobar').onclick = intentar(async () => {
+    const r = await post(`/api/operaciones/lotes/${id}/aprobar-cierre`);
+    const v = r.variacion_pct == null ? '' : ` Variación vs. ciclo anterior: ${num(r.variacion_pct)} %.`;
+    aviso(`${r.mensaje} Costo unitario: Bs ${num(r.costo_unitario_bs_kg, 4)}/kg.${v}`);
+    await Promise.all([cargarLotesCierre(), cargarStock(), cargarVentas()]);
+  });
+  if ($('#btnDescartar')) $('#btnDescartar').onclick = intentar(async () => {
+    if (!confirm('¿Descartar el faenado pendiente y su asiento en borrador?')) return;
+    await post(`/api/operaciones/lotes/${id}/faenado/descartar`);
+    aviso('Faenado descartado.');
+    await cargarLotesCierre();
+  });
+}
+
+/* ============================ 2. VENTAS ============================ */
+async function cargarClientes() {
+  clientes = await api('/api/operaciones/clientes');
+  $('#vCliente').innerHTML = clientes.map((c) => `<option value="${c.id}" data-tipo="${c.tipo}">${esc(c.nombre)} · ${esc(c.tipo.replace('_', ' '))}</option>`).join('');
+  ajustarFormVenta();
+}
+async function cargarStock() {
+  stockCache = await api('/api/operaciones/stock');
+  $('#stock').innerHTML = stockCache.map((s) => `
+    <div class="flex justify-between border-b border-stone-100 pb-1"><span>${esc(s.codigo)}<br><span class="text-xs text-stone-500">Bs ${num(s.costo_unitario, 4)}/kg</span></span>
+    <span class="num font-medium">${num(s.kg_disponibles)} kg</span></div>`).join('') || '<p class="text-stone-500">Sin carne en inventario: apruebe primero el cierre de un lote.</p>';
+  $('#vLote').innerHTML = stockCache.filter((s) => s.kg_disponibles > 0)
+    .map((s) => `<option value="${s.lote_id}">${esc(s.codigo)} — ${num(s.kg_disponibles)} kg</option>`).join('');
+}
+function ajustarFormVenta() {
+  const sel = $('#vCliente').selectedOptions[0];
+  const horeca = sel && sel.dataset.tipo === 'HORECA';
+  const opCred = $('#vCondicion option[value="CREDITO"]');
+  opCred.disabled = !horeca;
+  if (!horeca && $('#vCondicion').value === 'CREDITO') $('#vCondicion').value = 'CONTADO';
+  opCred.textContent = horeca ? 'Crédito HORECA (1 día)' : 'Crédito — no disponible (solo HORECA)';
+  const credito = $('#vCondicion').value === 'CREDITO';
+  $('#vMedioBox').hidden = credito;
+  $('#vCompromisoBox').hidden = !credito;
+  $('#vLoteBox').hidden = $('#vProducto').value !== 'CARNE';
+  const t = Number($('#vCantidad').value) * Number($('#vPrecio').value);
+  $('#vTotal').textContent = t > 0 ? `Total: Bs ${bs(t)}${credito ? ' · vence en 1 día' : ''}` : '';
+}
+async function cargarVentas() {
+  const ventas = await api('/api/operaciones/ventas');
+  const puedeCobrar = can('ventas.registrar');
+  $('#thVentas').innerHTML = ['Fecha', 'Cliente', 'Producto', 'Cant.', 'Total (Bs)', 'Condición', 'Comprobante', 'Estado', 'Asiento', '']
+    .map((h, i) => `<th class="${TH} ${[3, 4].includes(i) ? 'text-right' : ''}">${h}</th>`).join('');
+  $('#tbVentas').innerHTML = ventas.map((v) => `<tr>
+    <td class="${TD}">${esc(v.fecha)}</td>
+    <td class="${TD}">${esc(v.cliente)}<br><span class="text-xs text-stone-500">${esc(v.cliente_tipo.replace('_', ' '))}</span></td>
+    <td class="${TD}">${esc(v.producto)}${v.lote ? `<br><span class="text-xs text-stone-500">${esc(v.lote)}</span>` : ''}</td>
+    <td class="${TD} text-right num">${num(v.cantidad)} ${esc(v.unidad)}</td>
+    <td class="${TD} text-right num">${bs(v.total)}</td>
+    <td class="${TD}">${v.condicion === 'CREDITO' ? `Crédito ${v.plazo_dias} día<br><span class="text-xs text-stone-500">vence ${esc(v.fecha_vencimiento)}</span>` : `Contado<br><span class="text-xs text-stone-500">${esc((v.medio_pago || '').replace('_', ' '))}</span>`}</td>
+    <td class="${TD}">${esc(v.comprobante)}</td>
+    <td class="${TD}">${chip(v.estado === 'COBRADA' ? 'Cobrada' : 'Por cobrar', CHIP_VENTA[v.estado])}${v.vencida ? ' ' + chip('VENCIDA', 'bg-red-100 text-red-800') : ''}</td>
+    <td class="${TD} num">Nº ${v.asiento_numero}</td>
+    <td class="${TD}">${v.estado === 'PENDIENTE' && puedeCobrar ? `<button data-cobrar="${v.id}" class="${BTN_S}">Registrar cobro</button>` : ''}</td>
+  </tr>`).join('') || `<tr><td class="${TD} text-stone-500" colspan="10">Aún no hay ventas.</td></tr>`;
+  const pend = ventas.filter((v) => v.estado === 'PENDIENTE');
+  const venc = pend.filter((v) => v.vencida);
+  $('#resumenCxC').textContent = `Por cobrar: Bs ${bs(pend.reduce((s, v) => s + v.total, 0))}` + (venc.length ? ` · ${venc.length} vencida(s)` : '');
+  $$('[data-cobrar]').forEach((b) => (b.onclick = intentar(async () => {
+    const medio = prompt('Medio de cobro: EFECTIVO, TRANSFERENCIA, DEPOSITO, CHEQUE_NOMINATIVO o QR_ACH', 'TRANSFERENCIA');
+    if (!medio) return;
+    const r = await post(`/api/operaciones/ventas/${b.dataset.cobrar}/cobrar`, { fecha: hoy(), medio_cobro: medio.trim().toUpperCase() });
+    aviso(r.mensaje || 'Cobro registrado.');
+    await cargarVentas();
+  })));
+}
+
+['vCliente', 'vCondicion', 'vProducto'].forEach((id) => ($('#' + id).onchange = ajustarFormVenta));
+['vCantidad', 'vPrecio'].forEach((id) => ($('#' + id).oninput = ajustarFormVenta));
+
+$('#formVenta').onsubmit = intentar(async (e) => {
+  e.preventDefault();
+  const credito = $('#vCondicion').value === 'CREDITO';
+  const producto = $('#vProducto').value;
+  const cuerpo = {
+    fecha: $('#vFecha').value, cliente_id: Number($('#vCliente').value), producto,
+    cantidad: Number($('#vCantidad').value), precio_unitario: Number($('#vPrecio').value),
+    unidad: 'KG', condicion: $('#vCondicion').value, comprobante: $('#vComprobante').value.trim(),
+  };
+  if (producto === 'CARNE') cuerpo.lote_id = Number($('#vLote').value);
+  if (credito) cuerpo.compromiso_pago_firmado = $('#vCompromiso').checked; else cuerpo.medio_pago = $('#vMedio').value;
+  const r = await post('/api/operaciones/ventas', cuerpo);
+  aviso(`Venta registrada por Bs ${bs(r.total)} · asiento Nº ${r.asiento_numero}` + (r.estado === 'PENDIENTE' ? ` · por cobrar, vence ${r.fecha_vencimiento}` : ' · cobrada'));
+  $('#vCantidad').value = ''; $('#vComprobante').value = ''; $('#vCompromiso').checked = false;
+  ajustarFormVenta();
+  await Promise.all([cargarStock(), cargarVentas()]);
+});
+$('#formCliente').onsubmit = intentar(async (e) => {
+  e.preventDefault();
+  await post('/api/operaciones/clientes', { nombre: $('#cNombre').value.trim(), tipo: $('#cTipo').value });
+  $('#cNombre').value = '';
+  aviso('Cliente guardado.');
+  await cargarClientes();
+});
+
+iniciarPagina('operaciones', async () => {
+  $('#vFecha').value = hoy();
+  const tareas = [];
+  const veFaenado = can('lotes.cerrar') || can('lotes.aprobar_cierre');
+  $('#seccFaenado').hidden = !veFaenado;
+  if (veFaenado) tareas.push(cargarLotesCierre());
+  if (can('ventas.ver')) tareas.push(cargarClientes(), cargarStock(), cargarVentas());
+  await Promise.all(tareas);
+  $('#boxVenta').hidden = !can('ventas.registrar');
+  if (!can('ventas.ver') && !veFaenado) document.querySelector('main').innerHTML = '<p class="text-stone-600">El rol activo no tiene acceso a este módulo según el MOF.</p>';
+}).catch((e) => aviso(e.message, true));
+</script>
+</body>
+</html>

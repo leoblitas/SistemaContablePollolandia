@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Indicadores técnicos de costo — Pollolandia Contable</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: { brand: { 50: '#fff8eb', 100: '#feefc7', 500: '#d97706', 600: '#b45309', 700: '#92400e' } } } } };
+  </script>
+  <style>[hidden]{display:none!important} .num{font-variant-numeric:tabular-nums}</style>
+</head>
+<body class="bg-stone-50 text-stone-800 min-h-screen">
+<div id="cabecera"></div>
+
+<main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+  <div>
+    <h2 class="text-lg font-semibold">Indicadores técnicos de costo (MAN-01 §9)</h2>
+    <p class="text-sm text-stone-600">
+      Los nombres, fórmulas y umbrales provienen del Manual del Sistema de Costos y del MPP. Los indicadores marcados
+      <b>provisional</b> tienen datos del documento incompletos y deben confirmarse con la Unidad de Finanzas.
+    </p>
+    <p id="periodo" class="text-xs text-stone-500 mt-1"></p>
+  </div>
+
+  <section>
+    <h3 class="font-medium mb-3">Consolidado del ejercicio (ICL y RINC)</h3>
+    <div id="consolidado" class="grid md:grid-cols-2 gap-4"></div>
+    <p id="componentes" class="text-xs text-stone-500 mt-2"></p>
+  </section>
+
+  <section>
+    <h3 class="font-medium mb-3">Por lote cerrado (ICA y PMF)</h3>
+    <div class="bg-white rounded-xl border border-stone-200 overflow-x-auto">
+      <table class="w-full text-sm"><thead><tr id="thLotes"></tr></thead><tbody id="tbLotes"></tbody></table>
+    </div>
+    <p id="pendientes" class="text-xs text-amber-700 mt-2"></p>
+  </section>
+
+  <section>
+    <h3 class="font-medium mb-3">Definiciones y umbrales normativos</h3>
+    <div id="definiciones" class="grid md:grid-cols-2 gap-4"></div>
+  </section>
+
+  <section class="rounded-xl border border-amber-200 bg-amber-50 p-4">
+    <h3 class="font-medium mb-2 text-amber-900">Notas y criterios aplicados</h3>
+    <ul id="notas" class="list-disc pl-5 text-sm text-amber-900 space-y-1"></ul>
+  </section>
+</main>
+
+<script src="app-common.js"></script>
+<script>
+const fmtValor = (k) => (k.valor == null ? '—' : k.codigo === 'ICA' ? num(k.valor, 2) : `${num(k.valor, 2)} %`);
+const umbrales = (u) => `<span class="text-emerald-700">Bueno ${esc(u.bueno)}</span> · <span class="text-amber-700">Normal ${esc(u.normal)}</span> · <span class="text-red-700">Malo ${esc(u.malo)}</span>`;
+
+function tarjeta(k) {
+  return `<div class="bg-white rounded-xl border border-stone-200 p-5">
+    <div class="flex items-start justify-between gap-3">
+      <div><p class="text-xs uppercase tracking-wide text-stone-500">${esc(k.codigo)}${k.provisional ? ' · provisional' : ''}</p>
+        <p class="font-medium">${esc(k.nombre)}</p></div>
+      ${k.clasificacion ? chip(k.clasificacion, CLASIF[k.clasificacion]) : ''}
+    </div>
+    <p class="text-3xl font-semibold num mt-3">${fmtValor(k)}</p>
+    <p class="text-xs text-stone-500 mt-2">${esc(k.formula)}</p>
+    <p class="text-xs mt-1">${umbrales(k.umbrales)}</p>
+  </div>`;
+}
+const celdaKpi = (k) => `<td class="${TD}"><span class="num font-medium">${fmtValor(k)}</span> ${chip(k.clasificacion, CLASIF[k.clasificacion])}${k.provisional ? ' <span class="text-xs text-stone-400">prov.</span>' : ''}</td>`;
+
+async function cargar() {
+  const d = await api('/api/kpis');
+  $('#periodo').textContent = `Ejercicio ${d.ejercicio} · ${d.periodo.desde} al ${d.periodo.hasta}`;
+  const { icl, rinc, componentes: c } = d.consolidado;
+  $('#consolidado').innerHTML = tarjeta(icl) + tarjeta(rinc);
+  $('#componentes').textContent = `Costo de producción Bs ${bs(c.costo_produccion)} · Ventas totales Bs ${bs(c.ventas_totales)} (carne ${bs(c.ventas_carne)}, alimento ${bs(c.ventas_alimento)}, gallinaza ${bs(c.ventas_gallinaza)}).`;
+
+  $('#thLotes').innerHTML = ['Lote', 'Faenado', 'Aves', 'Alimento (kg)', 'Peso vivo (kg)', 'Peso canal (kg)', 'Costo Bs/kg', 'ICA', 'PMF']
+    .map((h, i) => `<th class="${TH} ${i >= 2 && i <= 6 ? 'text-right' : ''}">${h}</th>`).join('');
+  $('#tbLotes').innerHTML = d.lotes.map((l) => `<tr>
+    <td class="${TD}">${esc(l.lote)}</td><td class="${TD}">${esc(l.fecha_faenado)}</td>
+    <td class="${TD} text-right num">${num(l.aves_faenadas, 0)}</td><td class="${TD} text-right num">${num(l.alimento_consumido_kg)}</td>
+    <td class="${TD} text-right num">${num(l.peso_vivo_kg)}</td><td class="${TD} text-right num">${num(l.peso_canal_kg)}</td>
+    <td class="${TD} text-right num">${num(l.costo_unitario_bs_kg, 4)}</td>
+    ${celdaKpi(l.ica)}${celdaKpi(l.pmf)}</tr>`).join('')
+    || `<tr><td class="${TD} text-stone-500" colspan="9">Aún no hay lotes con cierre aprobado.</td></tr>`;
+  const pend = d.lotes_pendientes_de_aprobacion || [];
+  $('#pendientes').textContent = pend.length ? `Pendientes de aprobación de la GG (no incluidos): ${pend.map((p) => p.lote || p.codigo || p).join(', ')}` : '';
+
+  $('#definiciones').innerHTML = ['ICA', 'ICL', 'PMF', 'RINC'].map((cod) => {
+    const k = d.definiciones[cod];
+    return `<div class="bg-white rounded-xl border border-stone-200 p-4 text-sm">
+      <p class="font-medium">${cod} — ${esc(k.nombre)} ${k.provisional ? chip('provisional', 'bg-amber-100 text-amber-800') : ''}</p>
+      <p class="text-stone-600 mt-1">${esc(k.formula)}</p><p class="mt-1">${umbrales(k.umbrales)}</p>
+      <p class="text-xs text-stone-500 mt-1">Fuente: ${esc(k.fuente)}</p></div>`;
+  }).join('');
+  $('#notas').innerHTML = d.notas.map((n) => `<li>${esc(n)}</li>`).join('');
+}
+
+iniciarPagina('kpis', async () => {
+  if (!can('kpis.ver')) { document.querySelector('main').innerHTML = '<p class="text-stone-600">El rol activo no tiene acceso a los indicadores según el MOF.</p>'; return; }
+  await cargar();
+}).catch((e) => aviso(e.message, true));
+</script>
+</body>
+</html>
