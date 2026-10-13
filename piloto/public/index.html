@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Pollolandia Contable — Demo</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-  <script>
+  <script src="formatos.js"></script>
+<script>
     tailwind.config = { theme: { extend: { colors: { brand: { 50: '#fff8eb', 100: '#feefc7', 500: '#d97706', 600: '#b45309', 700: '#92400e' } } } } };
   </script>
   <style>[hidden]{display:none!important} .num{font-variant-numeric:tabular-nums}</style>
@@ -35,9 +36,11 @@
     <button data-tab="lotes"   data-perm="lotes.ver"     class="tab">Lotes y costos</button>
     <button data-tab="balance" data-perm="reportes.ver"  class="tab">Balance de comprobación</button>
     <a href="operaciones.html" data-perm="ventas.ver" class="px-4 py-2.5 border-b-2 border-transparent text-stone-500 hover:text-stone-800 whitespace-nowrap">Faenado y ventas</a>
+    <a href="kardex.html" data-perm="inventario.ver" class="px-4 py-2.5 border-b-2 border-transparent text-stone-500 hover:text-stone-800 whitespace-nowrap">Compras y kardex</a>
     <a href="kpis.html" data-perm="kpis.ver" class="px-4 py-2.5 border-b-2 border-transparent text-stone-500 hover:text-stone-800 whitespace-nowrap">Indicadores (KPIs)</a>
     <a href="accounting/asignar-costos.html" data-perm="costos.ver" class="px-4 py-2.5 border-b-2 border-transparent text-stone-500 hover:text-stone-800 whitespace-nowrap">Asignar costos</a>
     <a href="reports.html" data-perm="reportes.ver" class="px-4 py-2.5 border-b-2 border-transparent text-stone-500 hover:text-stone-800 whitespace-nowrap">Reportes y auditoría</a>
+    <a href="instructivo.html" class="px-4 py-2.5 border-b-2 border-transparent text-stone-500 hover:text-stone-800 whitespace-nowrap">Instructivo</a>
   </nav>
 </header>
 
@@ -262,11 +265,17 @@ async function verAsiento(id) {
   abrirModal(`Asiento N° ${a.numero} · ${a.tipo}`, `
     <p class="text-sm text-stone-600">${esc(a.fecha)} · ${esc(a.glosa)} ${chip(a.estado, CHIP_ESTADO[a.estado])}</p>
     ${a.documento_respaldo ? `<p class="text-xs text-stone-500 mt-1">Respaldo: ${esc(a.documento_respaldo)}</p>` : ''}
+    <div class="flex flex-wrap items-center gap-2 mt-3 text-sm">
+      <label class="text-stone-600">Imprimir como
+        <select id="selFormato" class="border border-stone-300 rounded-lg bg-white px-2 py-1.5 ml-1"><option value="">(sugerido)</option>
+          <option value="CI-01">CI-01 Comprobante de Ingreso</option><option value="CE-02">CE-02 Comprobante de Egreso</option><option value="CT-03">CT-03 Comprobante de Traspaso</option></select></label>
+      <button id="btnImprimirAsiento" class="${BTN_S}">Imprimir comprobante</button></div>
     <table class="w-full text-sm mt-4"><thead><tr><th class="${TH}">Cuenta</th><th class="${TH}">Matriz de costos</th><th class="${TH} text-right">Debe</th><th class="${TH} text-right">Haber</th></tr></thead><tbody>
     ${a.lineas.map((l) => `<tr><td class="${TD}"><span class="num">${esc(l.cuenta)}</span> ${esc(l.cuenta_nombre)}</td>
       <td class="${TD} text-xs text-stone-500">${l.centro ? `${esc(l.centro)} · sufijo ${esc(l.sufijo)} · ${esc(l.lote)}` : ''}</td>
       <td class="${TD} num text-right">${l.debe ? bs(l.debe) : ''}</td><td class="${TD} num text-right">${l.haber ? bs(l.haber) : ''}</td></tr>`).join('')}
     </tbody></table>`);
+  $('#btnImprimirAsiento').onclick = intentar(() => Formatos.comprobante((r) => api(r), id, $('#selFormato').value || undefined));
 }
 const autorizar = intentar(async (id) => {
   await api(`/api/asientos/${id}/autorizar`, { method: 'POST' });
@@ -372,7 +381,9 @@ async function nuevoLote() {
   });
 }
 async function verLote(id, codigo) {
-  const [bit, costos] = await Promise.all([api(`/api/lotes/${id}/bitacora`), can('costos.ver') ? api(`/api/lotes/${id}/costos`) : null]);
+  const [bit, costos, insumosAll] = await Promise.all([api(`/api/lotes/${id}/bitacora`), can('costos.ver') ? api(`/api/lotes/${id}/costos`) : null,
+    can('lotes.bitacora') && can('inventario.ver') ? api('/api/inventario/insumos').catch(() => []) : []]);
+  const insumosDisp = insumosAll.filter((i) => i.disponible);
   abrirModal(`Lote ${codigo}`, `
     <div data-perm="lotes.bitacora" ${can('lotes.bitacora') ? '' : 'hidden'} class="mb-6 rounded-xl bg-stone-50 border border-stone-200 p-4">
       <h4 class="font-medium mb-2">Registrar bitácora del día</h4>
@@ -382,6 +393,10 @@ async function verLote(id, codigo) {
         <label class="text-xs">Aves muertas<input type="number" min="0" name="mortalidad" value="0" class="${INPUT}"></label>
         <label class="text-xs sm:col-span-1">Novedad sanitaria<input name="novedad_sanitaria" class="${INPUT}"></label>
         <button class="${BTN_P}">Guardar</button>
+        ${insumosDisp.length ? `<div class="sm:col-span-5 border-t border-stone-200 pt-2">
+          <p class="text-xs text-stone-600 mb-1">Consumo de insumos del día (sale del kardex al costo promedio y genera el asiento del Grupo 6). Si carga alimento balanceado aquí, el campo "Alimento (kg)" se toma del kardex.</p>
+          <div id="consBit" class="space-y-1"></div>
+          <button type="button" id="addConsBit" class="${BTN_S} mt-1">+ Insumo consumido</button></div>` : ''}
       </form></div>
     ${costos ? `<h4 class="font-medium mb-2">Hoja de costos acumulada</h4>
       <table class="w-full text-sm mb-6"><thead><tr><th class="${TH}">Sufijo</th><th class="${TH}">Concepto</th><th class="${TH}">Elemento</th><th class="${TH} text-right">Bs</th></tr></thead><tbody>
@@ -392,11 +407,22 @@ async function verLote(id, codigo) {
     ${bit.map((b) => `<tr><td class="${TD} num">${b.dia_ciclo}</td><td class="${TD}">${esc(b.fecha)}</td><td class="${TD} num text-right">${bs(b.alimento_kg)}</td><td class="${TD} num text-right">${b.mortalidad}</td><td class="${TD}">${esc(b.novedad_sanitaria)}</td></tr>`).join('') || `<tr><td colspan="5" class="${TD} text-stone-400">Sin registros.</td></tr>`}
     </tbody></table></div>`);
   const f = $('#fBit');
+  if ($('#addConsBit')) $('#addConsBit').onclick = () => {
+    const d = document.createElement('div'); d.className = 'flex gap-2 items-center';
+    d.innerHTML = `<select class="${INPUT} cb-ins"><option value="">— insumo —</option>${insumosDisp.map((i) => `<option value="${i.id}">${esc(i.codigo)} · ${esc(i.nombre)} (${esc(i.unidad)}) — stock ${Math.round(i.cantidad_actual)}</option>`).join('')}</select>
+      <input type="number" min="0" step="any" placeholder="Cantidad" class="${INPUT} cb-cant" style="max-width:9rem"><button type="button" class="text-stone-400 hover:text-red-600">✕</button>`;
+    d.querySelector('button').onclick = () => d.remove();
+    $('#consBit').appendChild(d);
+  };
   if (f) f.onsubmit = intentar(async (ev) => {
     ev.preventDefault();
     const d = new FormData(ev.target);
-    const r = await api(`/api/lotes/${id}/bitacora`, { method: 'POST', body: JSON.stringify(Object.fromEntries(d)) });
-    aviso(`Bitácora del día ${r.dia_ciclo} registrada`);
+    const consumos = $$('#consBit > div').map((x) => ({ insumo_id: Number(x.querySelector('.cb-ins').value), cantidad: x.querySelector('.cb-cant').value })).filter((c) => c.insumo_id || c.cantidad);
+    const r = consumos.length
+      ? await api(`/api/inventario/lotes/${id}/bitacora`, { method: 'POST', body: JSON.stringify({ ...Object.fromEntries(d), consumos }) })
+      : await api(`/api/lotes/${id}/bitacora`, { method: 'POST', body: JSON.stringify(Object.fromEntries(d)) });
+    aviso(`Bitácora del día ${r.dia_ciclo} registrada` + (r.asiento_numero ? ` · consumo Bs ${bs(r.costo_total_consumo)} · asiento Nº ${r.asiento_numero}` : '') +
+      (r.alertas && r.alertas.length ? ' · Alerta de reorden: ' + r.alertas.map((a) => `${a.semaforo} ${a.insumo}`).join(', ') : ''));
     await verLote(id, codigo);
   });
 }

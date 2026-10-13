@@ -41,7 +41,7 @@ function aviso(texto, error = false) {
 }
 const intentar = (fn) => async (...a) => { try { await fn(...a); } catch (e) { aviso(e.message, true); } };
 
-/* Cabecera común: pagina = 'inicio' | 'operaciones' | 'kpis' */
+/* Cabecera común: pagina = 'inicio' | 'operaciones' | 'kardex' | 'kpis' | ... */
 function pintarCabecera(pagina) {
   const enlace = (href, txt, clave, perm) =>
     `<a href="${href}" ${perm ? `data-perm="${perm}"` : ''} class="px-4 py-2.5 border-b-2 whitespace-nowrap ${pagina === clave ? 'border-brand-500 text-brand-700 font-medium' : 'border-transparent text-stone-500 hover:text-stone-800'}">${txt}</a>`;
@@ -64,9 +64,11 @@ function pintarCabecera(pagina) {
     <nav class="max-w-7xl mx-auto px-4 flex gap-1 overflow-x-auto text-sm">
       ${enlace('index.html', 'Contabilidad', 'inicio')}
       ${enlace('operaciones.html', 'Faenado y ventas', 'operaciones', 'ventas.ver')}
+      ${enlace('kardex.html', 'Compras y kardex', 'kardex', 'inventario.ver')}
       ${enlace('kpis.html', 'Indicadores (KPIs)', 'kpis', 'kpis.ver')}
       ${enlace('accounting/asignar-costos.html', 'Asignar costos', 'costos', 'costos.ver')}
       ${enlace('reports.html', 'Reportes y auditoría', 'reportes', 'reportes.ver')}
+      ${enlace('instructivo.html', 'Instructivo', 'instructivo')}
     </nav>
   </header>
   <div id="toast" hidden class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 max-w-lg rounded-xl px-4 py-3 text-sm shadow-lg"></div>`;

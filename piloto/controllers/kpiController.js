@@ -67,12 +67,12 @@ module.exports = function crearControlador(h) {
       lotes,
       lotes_pendientes_de_aprobacion: pendientes,
       definiciones: Object.fromEntries(Object.entries(INDICADORES).map(([k, d]) => [k, {
-        nombre: d.nombre, formula: d.formula, umbrales: d.umbrales, fuente: d.fuente, provisional: !!d.provisional,
+        nombre: d.nombre, formula: d.formula, umbrales: d.umbrales, fuente: d.fuente,
       }])),
       notas: [
         'Costo de Producción (ICL) = Costo de Ventas acumulado del ejercicio (cuentas 6.1.02.01 y 6.1.02.02), como en la tabla 9.2 del Manual de Costos.',
         'Ventas Totales = ventas de carne (5.1.01.01) + alimento excedente (5.1.02.01) + gallinaza (5.2.01.04); el mismo denominador se usa en RINC.',
-        'PMF: el Manual de Costos deja la fórmula en blanco; se calcula con los datos de FIN-TRA-05 (peso vivo, peso canal, merma) y debe ser confirmada por la Unidad de Finanzas.',
+        'PMF: fórmula confirmada = (Peso vivo − Peso canal) / Peso vivo × 100, con los datos de FIN-TRA-05 (peso vivo, peso canal, merma).',
         'RINC: el documento indica "Bueno > 15 %" y "Meta 15 %"; aquí 15 % se considera meta cumplida. El tramo 14 %–15 % no está definido y se muestra como Normal.',
       ],
     };

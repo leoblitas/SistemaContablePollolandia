@@ -27,7 +27,7 @@ test('PMF: Bueno < 10 % · Normal 10–20 % · Malo > 20 %', () => {
   assert.equal(clase('PMF', 10), 'NORMAL');
   assert.equal(clase('PMF', 20), 'NORMAL');
   assert.equal(clase('PMF', 20.01), 'MALO');
-  assert.equal(evaluar('PMF', 8).provisional, true);
+  assert.equal(evaluar('PMF', 8).provisional, undefined); // fórmula confirmada
 });
 
 test('RINC: Malo < 5 % · Normal 5–14 % · Bueno ≥ 15 % (meta)', () => {

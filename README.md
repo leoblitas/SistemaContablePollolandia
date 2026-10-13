@@ -2,48 +2,7 @@
 
 Prueba piloto de una aplicación web de gestión contable para la **Cooperativa Agropecuaria Pollolandia R.L.** (Caranavi, Bolivia): producción avícola de ciclos de 73 días, costeo por absorción y control interno según el MOF del área financiera.
 
-> **Estado:** piloto funcional v1.0 (Fases 1-5 ensambladas): costeo por lote de 73 días, faenado, ventas HORECA, KPIs, estados financieros y auditoría RAU. Se ejecuta con `npm start`; ver *Inicio rápido*.
-
-## Prototipo estático existente (GitHub Pages)
-
-En la raíz del repositorio se conservan las páginas del prototipo inicial (`index.html`, `plan-de-cuentas.html`, `libro-diario.html`, `libro-mayor.html`, `eeff.html`, `datos-plan.js`), publicadas en <https://leoblitas.github.io/SistemaContablePollolandia/>.
-
-> **Importante:** GitHub Pages solo sirve archivos estáticos. La aplicación FastAPI (`app/`) y su base de datos necesitan un servidor Python, por lo que **no se ejecutan en Pages**. El prototipo estático seguirá funcionando como maqueta mientras el piloto se despliega en un servidor (Render, Railway, un VPS, etc.).
-
-## Inicio rápido — piloto de demostración (sin login)
-
-Servidor **Node.js + SQLite** con la interfaz web completa. **No usa autenticación**: el rol se cambia con el selector *Cambiar Rol Activo* de la barra superior (Gerente General, Contador/Jefe de Finanzas, Operador de Granja) y cada rol ve lo que le asigna el MOF.
-
-**Requisito:** [Node.js](https://nodejs.org) **22.13 o superior** (`node -v`). No tiene dependencias externas: `npm install` no descarga nada (puede ejecutarlo o saltarlo).
-
-```bash
-git clone https://github.com/leoblitas/SistemaContablePollolandia.git
-cd SistemaContablePollolandia
-npm install        # opcional: el proyecto no tiene dependencias
-npm start          # abre el servidor en http://localhost:3000
-```
-
-Abra <http://localhost:3000>. La primera vez se crea la base `piloto/data/pollolandia-demo.db` con el plan de cuentas, los roles y datos de demostración.
-
-| Comando | Qué hace |
-|---|---|
-| `npm start` | Inicia el servidor (puerto 3000; otro puerto: `PORT=8080 npm start`; en Windows PowerShell: `$env:PORT=8080; npm start`) |
-| `npm run reset` | Borra y recrea la base de demostración con datos nuevos |
-| `npm test` | Pruebas automáticas (11): fórmulas de KPIs y recorrido de las rutas de las Fases 1-5 con el servidor real |
-
-**Pantallas** (todas bajo `piloto/public/`):
-
-| Dirección | Contenido | Fase |
-|---|---|---|
-| `/` | Panel, plan de cuentas, libro diario, lotes y costos, balance | 1 y 3 |
-| `/accounting/asignar-costos.html` | Apertura de lote de 73 días y asignación de costos por sufijo (MAN-01) | 2 |
-| `/operaciones.html` | Faenado/cierre de ciclo (día 73) y ventas HORECA (crédito 1 día) o al contado | 4 |
-| `/kpis.html` | Indicadores ICA, ICL, PMF y RINC con umbrales normativos | 4 |
-| `/reports.html` | Libro mayor, balance de comprobación, estado de resultados y auditoría RAU | 5 |
-
-La documentación técnica (rutas, flujo de cierre, supuestos) está en [`piloto/README.md`](piloto/README.md). Funciona en Windows, macOS y Linux.
-
-> La carpeta `app/` (FastAPI) y `requirements.txt` son el esqueleto de la arquitectura definitiva (Fase 1) y **no se necesitan para ejecutar el piloto**.
+> **Estado:** piloto en construcción. Este repositorio contiene la estructura del proyecto, el esquema de base de datos (con las reglas de negocio ya aplicadas en la propia base) y los datos iniciales. La API de negocio se construye sobre ese esquema.
 
 ## Qué resuelve
 
@@ -219,3 +178,7 @@ El MOF, el Manual del Sistema de Costos y el Plan de Cuentas original tienen niv
 4. Reportes: libro diario, mayor, balance de comprobación, hoja de costos, ICA/ICL/RINC.
 5. Terceros (proveedores, clientes HORECA, socios) y cuentas por cobrar/pagar.
 6. Activación de la línea de alimento balanceado (CC-02) en 2027.
+
+## Fase 6 — Compras, kardex valorado y formatos imprimibles
+
+Módulo de compras de insumos, kardex KV-08 a costo promedio ponderado, expediente de proveedores RAU, consumo desde la bitácora del lote con asiento automático del Grupo 6, semáforo de reorden (CI-FIN-16) e impresión de los formatos CI-01, CE-02, CT-03, MA-04, BS-05, KV-08 y EC-07. Detalle, rutas y supuestos: `piloto/README.md` (sección *Fase 6*). Esquema: `database/fase6.sql`. Pantalla: `/kardex.html`.

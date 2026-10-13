@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Instructivo de uso — Pollolandia Contable</title>
+<style>
+  :root{--ink:#292524;--mut:#78716c;--line:#e7e5e4;--bg:#fafaf9;--card:#fff;--brand:#d97706;--brand-d:#92400e;--brand-l:#fef3c7;--ok:#047857;--okl:#d1fae5;--no:#b91c1c;--nol:#fee2e2}
+  *{box-sizing:border-box} body{margin:0;font:16px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);background:var(--bg)}
+  header{background:var(--card);border-bottom:1px solid var(--line);padding:14px 20px;display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+  header b{color:var(--brand-d)} header a{color:var(--brand-d);text-decoration:none;font-weight:600}
+  header .sp{margin-left:auto}
+  main{max-width:880px;margin:0 auto;padding:24px 16px 60px}
+  h1{font-size:1.7rem;margin:.2em 0} h2{font-size:1.25rem;margin:0 0 .6em} h3{font-size:1.05rem;margin:1.4em 0 .4em}
+  .lead{color:var(--mut);margin-top:0}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:16px 0}
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 0}
+  .tabs button{border:1px solid var(--line);background:var(--card);padding:10px 16px;border-radius:10px;font:inherit;font-weight:600;cursor:pointer;color:var(--mut)}
+  .tabs button[aria-selected=true]{background:var(--brand);border-color:var(--brand);color:#fff}
+  .panel[hidden]{display:none}
+  ol,ul{padding-left:1.3em;margin:.4em 0} li{margin:.35em 0}
+  .tag{display:inline-block;border-radius:999px;padding:1px 10px;font-size:.8rem;font-weight:600}
+  .si{background:var(--okl);color:var(--ok)} .no{background:var(--nol);color:var(--no)}
+  .tip{background:var(--brand-l);border-left:4px solid var(--brand);padding:10px 14px;border-radius:8px;margin:12px 0;font-size:.95rem}
+  .btn{display:inline-block;background:var(--brand);color:#fff;border-radius:7px;padding:1px 9px;font-size:.88rem;font-weight:600;white-space:nowrap}
+  .btn.s{background:#fff;color:var(--ink);border:1px solid #d6d3d1}
+  table{width:100%;border-collapse:collapse;font-size:.93rem} th,td{text-align:left;padding:8px 10px;border-top:1px solid var(--line);vertical-align:top} th{background:#f5f5f4;border-top:0}
+  .flow{display:flex;flex-wrap:wrap;align-items:stretch;gap:8px;margin:12px 0}
+  .flow div{flex:1 1 150px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px;font-size:.9rem}
+  .flow div b{display:block;color:var(--brand-d)} .flow .ar{flex:0 0 auto;border:0;background:none;align-self:center;font-size:1.3rem;color:var(--mut);padding:0}
+  code{background:#f5f5f4;padding:1px 6px;border-radius:5px;font-size:.9em}
+  @media print{header,.tabs{display:none} .panel[hidden]{display:block} body{background:#fff} .card{break-inside:avoid}}
+</style>
+</head>
+<body>
+<header>
+  <a href="/index.html">&larr; Volver al sistema</a>
+  <b>Instructivo de uso</b>
+  <span class="sp"><a href="#" onclick="window.print();return false">Imprimir / guardar PDF</a></span>
+</header>
+
+<main>
+  <h1>Pollolandia Contable — Instructivo de uso</h1>
+  <p class="lead">Guía sencilla para cada rol. Este sistema es una <b>demostración</b>: no pide usuario ni contraseña, y todos los datos son de ejemplo.</p>
+
+  <div class="card">
+    <h2>Cómo empezar (todos los roles)</h2>
+    <ol>
+      <li>Abra el link del sistema. Si estuvo sin uso, puede tardar hasta un minuto en abrir; espere.</li>
+      <li>Arriba a la derecha está el selector <b>Cambiar Rol Activo</b>. Elija quién es usted: <b>Gerente General</b>, <b>Contador / Jefe de Finanzas</b> u <b>Operador de Granja</b>. No hay clave.</li>
+      <li>Al cambiar de rol, el menú de arriba y los botones cambian: <b>cada rol solo ve lo que le corresponde</b> según el Manual de Organización y Funciones (MOF).</li>
+      <li>Las confirmaciones y los errores aparecen en un aviso oscuro/rojo en la parte de abajo de la pantalla.</li>
+    </ol>
+    <div class="tip">Para probar el flujo completo, cambie de rol a mitad de camino: el <b>Contador</b> registra y el <b>Gerente General</b> aprueba. Quien registra nunca aprueba su propio trabajo.</div>
+  </div>
+
+  <div class="card">
+    <h2>El recorrido de un ciclo (73 días)</h2>
+    <div class="flow">
+      <div><b>1 · Abrir lote</b>Contador</div><div class="ar">→</div>
+      <div><b>2 · Costos</b>Contador asigna pollitos, alimento, veterinarios…</div><div class="ar">→</div>
+      <div><b>3 · Bitácora</b>Operador registra alimento y mortalidad cada día</div><div class="ar">→</div>
+      <div><b>4 · Faenado (día 73)</b>Contador registra pesos</div><div class="ar">→</div>
+      <div><b>5 · Aprobar cierre</b>Gerente General</div><div class="ar">→</div>
+      <div><b>6 · Ventas y cobros</b>Contador</div><div class="ar">→</div>
+      <div><b>7 · Indicadores y reportes</b>GG y Contador</div>
+    </div>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button role="tab" data-t="gg" aria-selected="true">Gerente General</button>
+    <button role="tab" data-t="jf" aria-selected="false">Contador / Jefe de Finanzas</button>
+    <button role="tab" data-t="ut" aria-selected="false">Operador de Granja</button>
+    <button role="tab" data-t="reglas" aria-selected="false">Reglas importantes</button>
+  </div>
+
+  <!-- ============================== GG ============================== -->
+  <section class="panel" id="p-gg">
+    <div class="card">
+      <h2>Gerente General</h2>
+      <p class="lead">Dirige, controla y <b>autoriza</b>. No registra operaciones.</p>
+      <p><span class="tag si">Puede</span> ver todo (plan de cuentas, libro diario, lotes, balance, ventas, indicadores, reportes y auditoría), autorizar ajustes y aprobar el cierre de ciclo.<br>
+         <span class="tag no">No puede</span> registrar asientos, abrir lotes, registrar faenado ni ventas.</p>
+
+      <h3>1. Autorizar un asiento de ajuste</h3>
+      <ol>
+        <li>En el menú <b>Panel</b>, mire el cuadro <b>Pendientes de autorización</b>.</li>
+        <li>Pulse <span class="btn s">Ver detalle</span> para revisar las líneas (Debe y Haber).</li>
+        <li>Si está de acuerdo, pulse <span class="btn">Autorizar</span>. El asiento queda contabilizado.</li>
+      </ol>
+      <p>También puede hacerlo desde <b>Libro diario</b>, en la fila del asiento en estado <i>Borrador</i>.</p>
+
+      <h3>2. Aprobar el cierre de un ciclo</h3>
+      <ol>
+        <li>Entre a <b>Faenado y ventas</b> → sección <b>1 · Cierre de ciclo y faenado</b>.</li>
+        <li>Elija el lote. Verá aves, mortalidad, alimento consumido y costos por concepto.</li>
+        <li>Si el Contador ya registró el faenado, aparece un cuadro amarillo <i>Pendiente de aprobación</i>. Revíselo y pulse <span class="btn">Aprobar cierre de ciclo (GG)</span>.</li>
+        <li>El sistema muestra el <b>costo por kilo</b> del ciclo y cuánto varió frente al ciclo anterior. El lote queda <b>CERRADO</b> y la carne pasa a inventario.</li>
+      </ol>
+
+      <h3>3. Consultar indicadores y reportes</h3>
+      <ul>
+        <li><b>Compras y kardex:</b> consulte el semáforo de reorden (rojo / amarillo / verde), el kardex valorado de cada insumo y el expediente de proveedores. En rojo, la Gerencia puede autorizar una compra de emergencia.</li>
+        <li><b>Indicadores (KPIs):</b> ICA, ICL, PMF y RINC, con colores Bueno / Normal / Malo.</li>
+        <li><b>Reportes y auditoría:</b> libro mayor, balance de comprobación, estado de resultados y auditoría RAU.</li>
+        <li><b>Balance de comprobación</b> (menú Contabilidad): saldos de todas las cuentas.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============================== JF ============================== -->
+  <section class="panel" id="p-jf" hidden>
+    <div class="card">
+      <h2>Contador / Jefe de Finanzas</h2>
+      <p class="lead">Registra todas las operaciones contables, de costos y de ventas.</p>
+      <p><span class="tag si">Puede</span> registrar asientos, abrir lotes, asignar costos, registrar el faenado, registrar ventas y cobros, y ver indicadores y reportes.<br>
+         <span class="tag no">No puede</span> autorizar ajustes ni aprobar el cierre de ciclo (eso lo hace el Gerente General).</p>
+
+      <h3>1. Registrar un asiento contable</h3>
+      <ol>
+        <li>Menú <b>Contabilidad</b> → pestaña <b>Libro diario</b> → <span class="btn">+ Nuevo asiento</span>.</li>
+        <li>Elija el <b>tipo</b>: <i>Diario</i> (queda contabilizado al guardar) o <i>Ajuste</i> (queda pendiente hasta que lo autorice el Gerente General).</li>
+        <li>Complete fecha, documento de respaldo (factura, recibo) y glosa.</li>
+        <li>Agregue las líneas con <span class="btn s">+ Agregar línea</span>: cuenta y monto en Debe o en Haber.</li>
+        <li>Revise que <b>Debe = Haber</b> (el sistema lo avisa) y pulse <span class="btn">Guardar asiento</span>.</li>
+      </ol>
+      <div class="tip">Un asiento ya contabilizado no se borra ni se edita. Si hubo un error, se corrige con un asiento contrario (anulación).</div>
+
+      <h3>2. Abrir un lote de 73 días</h3>
+      <ol>
+        <li><b>Contabilidad</b> → pestaña <b>Lotes y costos</b> → <span class="btn">+ Abrir lote</span>.</li>
+        <li>Indique la <b>fecha de recepción de los pollitos</b> (día 1) y las <b>aves iniciales</b>.</li>
+        <li>El sistema crea el lote con su código y calcula el día 73.</li>
+      </ol>
+
+      <h3>3. Asignar costos al lote</h3>
+      <ol>
+        <li>Menú <b>Asignar costos</b>. Elija el lote.</li>
+        <li>Agregue cada costo con su <b>sufijo</b> (por ejemplo: 01 Pollitos BB, 02 Alimento comprado, 08 Productos veterinarios), con cantidad × costo unitario o con el monto total.</li>
+        <li>Pulse <span class="btn">Registrar asiento de costos</span>. Se genera el asiento automáticamente.</li>
+      </ol>
+
+      <h3>4. Registrar el faenado (día 73)</h3>
+      <ol>
+        <li>Menú <b>Faenado y ventas</b> → sección <b>1 · Cierre de ciclo y faenado</b>. Elija el lote.</li>
+        <li>La <b>fecha</b> debe ser exactamente el día 73 del ciclo (viene sugerida).</li>
+        <li>Escriba <b>aves faenadas</b>, <b>peso vivo (kg)</b> y <b>peso canal (kg)</b>. El peso canal no puede ser mayor al peso vivo.</li>
+        <li>Si la mortalidad pasó del 5 %, el <b>informe veterinario es obligatorio</b>.</li>
+        <li>Pulse <span class="btn">Registrar faenado y preparar asiento de cierre</span>. Queda <i>Pendiente de aprobación</i>.</li>
+        <li>Si se equivocó, pulse <span class="btn s">Descartar y corregir</span> y regístrelo de nuevo. Pase al rol <b>Gerente General</b> para aprobarlo.</li>
+      </ol>
+
+      <h3>5. Registrar una venta</h3>
+      <ol>
+        <li>Menú <b>Faenado y ventas</b> → sección <b>2 · Ventas HORECA y al contado</b>. Si el cliente no existe, abra <b>+ Nuevo cliente</b>.</li>
+        <li>Elija cliente, producto (carne o gallinaza), lote, cantidad y precio. Escriba el <b>número de comprobante</b> (obligatorio).</li>
+        <li><b>Al contado:</b> elija el medio de pago (efectivo, transferencia, depósito, cheque nominativo al día, QR/ACH).</li>
+        <li><b>A crédito:</b> solo clientes <b>HORECA</b> (hoteles, restaurantes, catering), plazo de <b>1 día</b>. Marque que el comprador firmó el <b>compromiso de pago</b>.</li>
+        <li>Pulse <span class="btn">Registrar venta y generar asiento</span>. El asiento de ingreso (y de cuentas por cobrar, si es crédito) se crea solo.</li>
+      </ol>
+      <h3>6. Registrar un cobro</h3>
+      <p>En la tabla <b>Ventas y cuentas por cobrar</b>, en la fila <i>Por cobrar</i>, pulse <span class="btn s">Registrar cobro</span> y escriba el medio (por ejemplo <code>TRANSFERENCIA</code>). Las ventas con plazo vencido muestran la etiqueta <b>VENCIDA</b>.</p>
+
+      <h3>7. Comprar insumos y llevar el kardex</h3>
+      <ol>
+        <li>Menú <b>Compras y kardex → Compras</b>. Elija el proveedor o <b>+ Proveedor nuevo</b> y complete sus credenciales: nombre o razón social, C.I./NIT y Certificado RAU o de No Imponibilidad con su número. <b>Sin esos datos el sistema no procesa la compra.</b></li>
+        <li>Escriba el número de factura o recibo, agregue los insumos con cantidad y costo unitario, y elija <b>Contado</b> (forma de pago) o <b>Crédito</b> (fecha de vencimiento).</li>
+        <li>Más de <b>Bs 1.000</b> exige el número de la orden de compra aprobada por la Gerencia General; más de <b>Bs 5.000</b>, al menos <b>3 cotizaciones</b>.</li>
+        <li>Pulse <b>Registrar compra</b>: el insumo entra al kardex y se recalcula el costo promedio. Las compras a crédito quedan <i>Por pagar</i>: pulse <span class="btn s">Pagar</span> para generar el comprobante de egreso.</li>
+        <li><b>Kardex KV-08:</b> elija el insumo y pulse <b>Consultar</b>; con <b>Imprimir KV-08</b> sale el formato.</li>
+        <li><b>Semáforo:</b> en <b>Semáforo e insumos</b> puede ajustar el stock de seguridad, el punto de reorden y el máximo de cada insumo. Rojo = bajo el stock de seguridad; amarillo = en el punto de reorden o por debajo.</li>
+      </ol>
+      <h3>8. Imprimir comprobantes y reportes</h3>
+      <p>Libro diario → <b>Ver</b> un asiento → <b>Imprimir comprobante</b> (CI-01 ingreso, CE-02 egreso o CT-03 traspaso; el sistema sugiere el adecuado). En <b>Reportes</b>: <b>Imprimir MA-04</b> y <b>Imprimir BS-05</b>. En <b>Faenado y ventas</b>: <b>Imprimir estado de cuenta EC-07</b> por cliente. En el diálogo de impresión del navegador puede elegir <i>Guardar como PDF</i>.</p>
+
+      <h3>9. Indicadores y reportes</h3>
+      <p>Menús <b>Indicadores (KPIs)</b> y <b>Reportes y auditoría</b>. En los reportes: elija pestaña (Libro Mayor, Balance, Estado de Resultados o Auditoría RAU), ajuste fechas y pulse el botón de la pestaña. Para el Libro Mayor escriba primero una cuenta (por ejemplo <code>1.1.03</code>).</p>
+    </div>
+  </section>
+
+  <!-- ============================== UT ============================== -->
+  <section class="panel" id="p-ut" hidden>
+    <div class="card">
+      <h2>Operador de Granja</h2>
+      <p class="lead">Es quien cuida las aves y entrega los datos del día a día.</p>
+      <p><span class="tag si">Puede</span> ver los lotes y registrar la <b>bitácora diaria</b>.<br>
+         <span class="tag no">No puede</span> ver ni registrar nada contable, ni ventas, ni indicadores, ni reportes. Puede <b>consultar el inventario de insumos</b> (menú <b>Compras y kardex</b>) y <b>descontar de él lo que consumió</b>. Por eso su menú es corto.</p>
+
+      <h3>Registrar la bitácora del día</h3>
+      <ol>
+        <li>En <b>Panel</b> o en <b>Lotes y costos</b>, busque su lote y pulse <span class="btn s">Abrir lote</span> (o <span class="btn s">Abrir</span>).</li>
+        <li>En el cuadro <b>Registrar bitácora del día</b> complete:
+          <ul><li><b>Fecha</b> del día.</li><li><b>Alimento (kg)</b> consumido ese día.</li><li><b>Aves muertas</b> ese día (0 si no hubo).</li><li><b>Novedad sanitaria</b>, si hubo (síntomas, tratamientos).</li></ul></li>
+        <li>Pulse <span class="btn">Guardar</span>. Abajo se actualiza la tabla <b>Bitácora diaria</b>.</li>
+      </ol>
+      <h3>Descontar insumos al registrar la bitácora</h3>
+      <ol>
+        <li>En el mismo cuadro, debajo de <b>Guardar</b>, pulse <span class="btn s">+ Insumo consumido</span>, elija el insumo (alimento, medicamento, vacuna…) y escriba la cantidad.</li>
+        <li>Pulse <span class="btn">Guardar</span>. El insumo sale del kardex al costo promedio y el sistema genera solo el asiento de costos del lote.</li>
+        <li>Si el alimento balanceado va aquí, el campo <b>Alimento (kg)</b> se toma del kardex. Si un insumo queda en <b>amarillo</b> o <b>rojo</b>, el sistema avisa que hay que pedir más.</li>
+        <li>También puede hacerlo desde <b>Compras y kardex → Consumo en bitácora</b>.</li>
+      </ol>
+      <div class="tip">Solo se puede registrar <b>un dato por día</b> de cada lote. Estos datos se usan después para la mortalidad (límite normal: 5 %) y para el indicador ICA (alimento consumido), así que conviene que sean exactos.</div>
+    </div>
+  </section>
+
+  <!-- ============================== REGLAS ============================== -->
+  <section class="panel" id="p-reglas" hidden>
+    <div class="card">
+      <h2>Reglas importantes del sistema</h2>
+      <table>
+        <thead><tr><th>Tema</th><th>Regla</th></tr></thead>
+        <tbody>
+          <tr><td>Compras de insumos</td><td>El vendedor debe dar nombre, C.I./NIT y certificado RAU o de no imponibilidad. Más de Bs 1.000: orden de compra aprobada por la GG; más de Bs 5.000: 3 cotizaciones.</td></tr>
+          <tr><td>Kardex</td><td>Costo promedio ponderado. Las salidas (consumo de bitácora) se valoran al costo promedio vigente y se cargan al lote por sufijo.</td></tr>
+          <tr><td>Quien registra no aprueba</td><td>El Contador registra; el Gerente General autoriza ajustes y aprueba el cierre del ciclo.</td></tr>
+          <tr><td>Partida doble</td><td>Todo asiento debe cuadrar: Debe = Haber. Si no cuadra, no se guarda.</td></tr>
+          <tr><td>Nada se borra</td><td>Un asiento contabilizado no se edita ni se elimina; se corrige con un asiento contrario.</td></tr>
+          <tr><td>Ciclo</td><td>Cada lote dura 73 días. El faenado y el cierre de costos se registran el día 73.</td></tr>
+          <tr><td>Mortalidad</td><td>Hasta 5 % es normal. Si pasa del 5 %, se exige informe veterinario.</td></tr>
+          <tr><td>Crédito</td><td>Solo clientes HORECA, máximo 1 día calendario, con comprobante y compromiso de pago firmado. Los demás clientes pagan al contado.</td></tr>
+          <tr><td>Medios de pago</td><td>Efectivo, transferencia, depósito, cheque nominativo y QR/ACH. No se aceptan cheques diferidos.</td></tr>
+          <tr><td>Sin comprobante no hay venta</td><td>Cada venta lleva su número de comprobante o nota de entrega.</td></tr>
+          <tr><td>Indicadores</td><td><b>ICA</b> conversión alimenticia: menor a 2,00 · <b>ICL</b> índice de costo por ventas: menor a 61 % · <b>PMF</b> mermas en faenado: menor a 10 % · <b>RINC</b> ingresos no cárnicos: 15 % o más.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Si algo no funciona</h3>
+      <ul>
+        <li><b>Un botón no aparece:</b> el rol activo no tiene permiso. Cambie de rol (arriba a la derecha).</li>
+        <li><b>Mensaje rojo al guardar:</b> léalo; explica qué regla no se cumplió (por ejemplo, el asiento no cuadra o falta el comprobante).</li>
+        <li><b>La página tarda en abrir:</b> el servicio gratuito se duerme; espere hasta un minuto.</li>
+        <li><b>Los datos volvieron a los de ejemplo:</b> en esta demostración la información se reinicia cuando el servicio se reinicia.</li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  var tabs = document.querySelectorAll('.tabs button');
+  function mostrar(t) {
+    tabs.forEach(function (b) { b.setAttribute('aria-selected', b.dataset.t === t ? 'true' : 'false'); });
+    document.querySelectorAll('.panel').forEach(function (p) { p.hidden = p.id !== 'p-' + t; });
+    try { history.replaceState(null, '', '#' + t); } catch (e) {}
+  }
+  tabs.forEach(function (b) { b.onclick = function () { mostrar(b.dataset.t); }; });
+  var h = (location.hash || '').slice(1);
+  if (['gg', 'jf', 'ut', 'reglas'].indexOf(h) >= 0) mostrar(h);
+})();
+</script>
+</body>
+</html>

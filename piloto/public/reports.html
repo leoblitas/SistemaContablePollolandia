@@ -53,9 +53,11 @@
 <div style="background:#fff;border-bottom:1px solid #e7e5e4;padding:8px 16px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;font:14px system-ui,sans-serif">
   <a href="/index.html" style="color:#92400e;font-weight:600;text-decoration:none">&larr; Pollolandia Contable</a>
   <a href="/operaciones.html" style="color:#57534e;text-decoration:none">Faenado y ventas</a>
+  <a href="/kardex.html" style="color:#57534e;text-decoration:none">Compras y kardex</a>
   <a href="/kpis.html" style="color:#57534e;text-decoration:none">Indicadores</a>
   <a href="/accounting/asignar-costos.html" style="color:#57534e;text-decoration:none">Asignar costos</a>
   <a href="/reports.html" style="color:#57534e;text-decoration:none">Reportes y auditoría</a>
+  <a href="/instructivo.html" style="color:#57534e;text-decoration:none">Instructivo</a>
   <label style="margin-left:auto">Rol activo (demo, sin clave)
     <select id="selRolBarra" style="margin-left:6px;padding:4px 8px;border:1px solid #d6d3d1;border-radius:6px"></select></label>
 </div>
@@ -98,7 +100,7 @@
       <div><label for="mCuenta">Cuenta (nivel 1 a 4)</label><input id="mCuenta" list="dlCuentas" placeholder="Ej. 1.1.03 o 1.1.03.01"></div>
       <div><label for="mDesde">Desde</label><input id="mDesde" type="date"></div>
       <div><label for="mHasta">Hasta</label><input id="mHasta" type="date"></div>
-      <div><button class="primary" id="mGo" type="button">Consultar Mayor</button></div>
+      <div><button class="primary" id="mGo" type="button">Consultar Mayor</button> <button class="ghost" id="mPrint" type="button" hidden>Imprimir MA-04</button></div>
     </div>
     <div id="mOut"></div>
   </section>
@@ -111,7 +113,7 @@
       <div><label for="bNivel">Nivel de detalle</label>
         <select id="bNivel"><option value="4" selected>4 — Cuenta</option><option value="3">3 — Subgrupo</option><option value="2">2 — Clasificación</option><option value="1">1 — Grupo</option></select></div>
       <div><label><input id="bAntes" type="checkbox"> Antes de ajustes (BS-05)</label></div>
-      <div><button class="primary" id="bGo" type="button">Generar Balance</button></div>
+      <div><button class="primary" id="bGo" type="button">Generar Balance</button> <button class="ghost" id="bPrint" type="button" hidden>Imprimir BS-05</button></div>
     </div>
     <div id="bOut"></div>
   </section>
@@ -141,6 +143,7 @@
 </main>
 <datalist id="dlCuentas"></datalist>
 
+<script src="/formatos.js"></script>
 <script>
 (function () {
   var BASE = '/api/reportes';
@@ -181,12 +184,14 @@
     };
   });
 
+  $('mPrint').onclick = function () { if (window.__mayor) Formatos.imprimir(Formatos.htmlMayor(window.__mayor)); };
+  $('bPrint').onclick = function () { if (window.__balance) Formatos.imprimir(Formatos.htmlBalance(window.__balance)); };
   // ---------- LIBRO MAYOR (MA-04) ----------
   $('mGo').onclick = function () {
     var out = $('mOut'); out.textContent = 'Consultando…';
     api('/libro-mayor', { cuenta: $('mCuenta').value.trim().split(' ')[0], desde: $('mDesde').value, hasta: $('mHasta').value, ejercicio_id: ej() }).then(function (j) {
       if (!j.ok) return error(out, j.error);
-      var r = j.reporte; out.innerHTML = '';
+      var r = j.reporte; out.innerHTML = ''; window.__mayor = r; $('mPrint').hidden = false;
       out.appendChild(h('p', { class: 'note', text: r.formato + ' · ' + r.filtro.cuenta + ' — ' + r.filtro.nombre + ' (nivel ' + r.filtro.nivel + ') · del ' + r.filtro.desde + ' al ' + r.filtro.hasta }));
       if (!r.cuentas.length) out.appendChild(h('p', { text: 'La cuenta no tiene movimientos hasta la fecha indicada.' }));
       r.cuentas.forEach(function (c) {
@@ -213,7 +218,7 @@
     var out = $('bOut'); out.textContent = 'Generando…';
     api('/balance-comprobacion', { desde: $('bDesde').value, hasta: $('bHasta').value, nivel: $('bNivel').value, antes_de_ajustes: $('bAntes').checked ? 1 : '', ejercicio_id: ej() }).then(function (j) {
       if (!j.ok) return error(out, j.error);
-      var r = j.reporte; out.innerHTML = '';
+      var r = j.reporte; out.innerHTML = ''; window.__balance = r; $('bPrint').hidden = false;
       out.appendChild(h('p', { class: 'note', text: r.formato + ' · ejercicio ' + r.filtro.ejercicio + ' · del ' + r.filtro.desde + ' al ' + r.filtro.hasta + (r.filtro.antes_de_ajustes ? ' · antes de ajustes' : '') }));
       var t = h('table', null, h('thead', null,
         h('tr', null, th('N.°'), th('Código'), th('Denominación de la cuenta'), th('Sumas Debe', 'n'), th('Sumas Haber', 'n'), th('Saldo deudor', 'n'), th('Saldo acreedor', 'n'))));

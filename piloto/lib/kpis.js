@@ -26,11 +26,10 @@ const INDICADORES = {
   },
   PMF: {
     nombre: 'Porcentaje de Mermas en Faenado',
-    formula: '(Peso vivo − Peso canal) / Peso vivo × 100  [PROVISIONAL: el Manual de Costos deja la fórmula en blanco]',
+    formula: '(Peso vivo − Peso canal) / Peso vivo × 100',
     unidad: '%',
     umbrales: { bueno: '< 10 %', normal: '10 % – 20 %', malo: '> 20 %' },
     fuente: 'MAN-01 §9.1 (umbrales); MPP PR-FIN-04 (FIN-TRA-05 registra peso vivo, peso canal y merma)',
-    provisional: true,
     clasificar: (v) => (v < 10 ? CLASES.BUENO : v <= 20 ? CLASES.NORMAL : CLASES.MALO),
   },
   RINC: {
@@ -63,7 +62,6 @@ function evaluar(codigo, valor) {
     formula: def.formula,
     umbrales: def.umbrales,
     fuente: def.fuente,
-    provisional: !!def.provisional,
     valor: ok ? redondear(valor, 2) : null,
     clasificacion: ok ? def.clasificar(valor) : CLASES.SIN_DATOS, // se clasifica el valor sin redondear
   };

@@ -121,7 +121,11 @@
     <div class="bg-white rounded-xl border border-stone-200 overflow-x-auto">
       <div class="px-5 py-3 flex items-center justify-between">
         <h3 class="font-medium">Ventas y cuentas por cobrar</h3>
-        <span id="resumenCxC" class="text-sm text-stone-600"></span>
+        <span class="flex flex-wrap items-center gap-2 text-sm">
+          <span id="resumenCxC" class="text-stone-600"></span>
+          <select id="ecCliente" class="border border-stone-300 rounded-lg bg-white px-2 py-1.5"></select>
+          <button id="btnEC" class="${BTN_S}">Imprimir estado de cuenta EC-07</button>
+        </span>
       </div>
       <table class="w-full text-sm">
         <thead><tr id="thVentas"></tr></thead>
@@ -132,6 +136,7 @@
 </main>
 
 <script src="app-common.js"></script>
+<script src="formatos.js"></script>
 <script>
 const CHIP_VENTA = { COBRADA: 'bg-emerald-100 text-emerald-800', PENDIENTE: 'bg-amber-100 text-amber-800' };
 let cierre = null, stockCache = [], clientes = [];
@@ -228,6 +233,7 @@ async function cargarResumen(id) {
 /* ============================ 2. VENTAS ============================ */
 async function cargarClientes() {
   clientes = await api('/api/operaciones/clientes');
+  $('#ecCliente').innerHTML = clientes.map((c) => `<option value="${c.id}">${esc(c.nombre)}</option>`).join('');
   $('#vCliente').innerHTML = clientes.map((c) => `<option value="${c.id}" data-tipo="${c.tipo}">${esc(c.nombre)} · ${esc(c.tipo.replace('_', ' '))}</option>`).join('');
   ajustarFormVenta();
 }
@@ -268,11 +274,13 @@ async function cargarVentas() {
     <td class="${TD}">${esc(v.comprobante)}</td>
     <td class="${TD}">${chip(v.estado === 'COBRADA' ? 'Cobrada' : 'Por cobrar', CHIP_VENTA[v.estado])}${v.vencida ? ' ' + chip('VENCIDA', 'bg-red-100 text-red-800') : ''}</td>
     <td class="${TD} num">Nº ${v.asiento_numero}</td>
-    <td class="${TD}">${v.estado === 'PENDIENTE' && puedeCobrar ? `<button data-cobrar="${v.id}" class="${BTN_S}">Registrar cobro</button>` : ''}</td>
+    <td class="${TD} whitespace-nowrap">${v.estado === 'PENDIENTE' && puedeCobrar ? `<button data-cobrar="${v.id}" class="${BTN_S}">Registrar cobro</button>` : ''}
+      <button data-cp="${v.asiento_id}" class="${BTN_S}">Imprimir</button>${v.asiento_cobro_id ? `<button data-cp="${v.asiento_cobro_id}" data-f="CI-01" class="${BTN_S}">CI-01 cobro</button>` : ''}</td>
   </tr>`).join('') || `<tr><td class="${TD} text-stone-500" colspan="10">Aún no hay ventas.</td></tr>`;
   const pend = ventas.filter((v) => v.estado === 'PENDIENTE');
   const venc = pend.filter((v) => v.vencida);
   $('#resumenCxC').textContent = `Por cobrar: Bs ${bs(pend.reduce((s, v) => s + v.total, 0))}` + (venc.length ? ` · ${venc.length} vencida(s)` : '');
+  $$('[data-cp]').forEach((b) => (b.onclick = intentar(() => Formatos.comprobante((r) => api(r), b.dataset.cp, b.dataset.f))));
   $$('[data-cobrar]').forEach((b) => (b.onclick = intentar(async () => {
     const medio = prompt('Medio de cobro: EFECTIVO, TRANSFERENCIA, DEPOSITO, CHEQUE_NOMINATIVO o QR_ACH', 'TRANSFERENCIA');
     if (!medio) return;
@@ -282,6 +290,7 @@ async function cargarVentas() {
   })));
 }
 
+$('#btnEC').onclick = intentar(async () => Formatos.imprimir(Formatos.htmlEstadoCuenta(await api(`/api/formatos/estado-cuenta?tipo=cliente&id=${$('#ecCliente').value}`))));
 ['vCliente', 'vCondicion', 'vProducto'].forEach((id) => ($('#' + id).onchange = ajustarFormVenta));
 ['vCantidad', 'vPrecio'].forEach((id) => ($('#' + id).oninput = ajustarFormVenta));
 

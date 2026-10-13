@@ -42,6 +42,14 @@ function abrirBase() {
   }
   const fase4 = path.join(ROOT, 'database', 'fase4.sql');          // Fase 4 (idempotente)
   if (fs.existsSync(fase4)) db.exec(fs.readFileSync(fase4, 'utf8'));
+  const fase6 = path.join(ROOT, 'database', 'fase6.sql');           // Fase 6: compras, kardex, proveedores RAU (idempotente)
+  if (fs.existsSync(fase6)) db.exec(fs.readFileSync(fase6, 'utf8'));
+  // Opcional (demo): habilita la línea de alimento propio CC-02 antes de 2027 (ver comentario de database/seeds/03_centros_sufijos.sql)
+  if (process.env.ACTIVAR_LINEA_ALIMENTO === '1') {
+    db.exec(`UPDATE sufijos_costo SET activo = 1 WHERE vigente_desde IS NOT NULL;
+             UPDATE centros_costo SET activo = 1 WHERE codigo = 'CC-02';
+             UPDATE cuentas SET activa = 1 WHERE vigente_desde IS NOT NULL;`);
+  }
   return db;
 }
 const db = abrirBase();
@@ -285,7 +293,8 @@ ruta('GET', '/api/lotes/(\\d+)/costos', (ctx, req, url, [id]) => {
 const fase4 = require('./routes/operationalRoutes')({ ruta, db, all, get, run, tx, exigir, HttpError, leerJson });
 // Fases 2 y 5 (contabilidad y costos por lote; reportes y auditoría RAU): módulos externos montados sin Express
 require('./routes/integracionRoutes')({ ruta, db, exigir, HttpError, leerJson });
-if (!process.env.SIN_DEMO_FASE4) fase4.sembrarDemo();   // datos de ejemplo de la demo (una sola vez)
+const fase6r = require('./routes/inventoryRoutes')({ ruta, db, all, get, run, tx, exigir, HttpError, leerJson });
+if (!process.env.SIN_DEMO_FASE4) { fase4.sembrarDemo(); fase6r.sembrarDemo(); }   // datos de ejemplo de la demo (una sola vez)
 
 // ----------------------------------------------------------------------------- servidor
 function servirEstatico(req, res, url) {

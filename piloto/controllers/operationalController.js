@@ -271,7 +271,7 @@ module.exports = function crearControlador(h) {
     return all(
       `SELECT v.id, v.fecha, c.nombre AS cliente, c.tipo AS cliente_tipo, v.producto, l.codigo AS lote, v.cantidad, v.unidad,
               v.precio_unitario, v.total, v.costo_venta, v.condicion, v.plazo_dias, v.fecha_vencimiento, v.medio_pago,
-              v.comprobante, v.estado, v.fecha_cobro, a.numero AS asiento_numero
+              v.comprobante, v.estado, v.fecha_cobro, a.numero AS asiento_numero, v.asiento_id, v.asiento_cobro_id
        FROM ventas v JOIN clientes c ON c.id = v.cliente_id LEFT JOIN lotes l ON l.id = v.lote_id JOIN asientos a ON a.id = v.asiento_id
        ORDER BY v.fecha DESC, v.id DESC`)
       .map((v) => ({ ...v, vencida: v.estado === 'PENDIENTE' && v.fecha_vencimiento < hoyIso }));

@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Compras y kardex — Pollolandia Contable</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: { brand: { 50: '#fff8eb', 100: '#feefc7', 500: '#d97706', 600: '#b45309', 700: '#92400e' } } } } };
+  </script>
+  <style>[hidden]{display:none!important} .num{font-variant-numeric:tabular-nums}</style>
+</head>
+<body class="bg-stone-50 text-stone-800 min-h-screen">
+<div id="cabecera"></div>
+
+<main class="max-w-7xl mx-auto px-4 py-6 space-y-5">
+  <div>
+    <h2 class="text-lg font-semibold">Compras, kardex valorado e inventario de insumos</h2>
+    <p class="text-sm text-stone-600">
+      Kardex KV-08 a <b>Costo Promedio Ponderado</b> (PC-07) · compras según PR-FIN-03 · expediente de proveedores RAU (PET-RAU-001) ·
+      semáforo de reorden (CI-FIN-16) · consumo desde la bitácora del lote (día 1 a 73) con asiento automático del Grupo 6.
+    </p>
+  </div>
+
+  <div id="alertas" class="space-y-2"></div>
+
+  <nav id="tabs" class="flex gap-1 border-b border-stone-200 text-sm overflow-x-auto">
+    <button data-tab="insumos" class="px-4 py-2 border-b-2">Semáforo e insumos</button>
+    <button data-tab="compras" data-perm="inventario.ver" class="px-4 py-2 border-b-2">Compras</button>
+    <button data-tab="proveedores" class="px-4 py-2 border-b-2">Proveedores RAU</button>
+    <button data-tab="kardex" class="px-4 py-2 border-b-2">Kardex KV-08</button>
+    <button data-tab="consumo" class="px-4 py-2 border-b-2">Consumo en bitácora</button>
+  </nav>
+
+  <!-- ============ SEMÁFORO E INSUMOS ============ -->
+  <section id="tab-insumos" class="space-y-4">
+    <div id="resumenSem" class="grid grid-cols-2 md:grid-cols-5 gap-3"></div>
+    <div class="bg-white rounded-xl border border-stone-200 overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead><tr>
+          <th class="text-left font-medium text-stone-500 bg-stone-50 px-4 py-2.5">Semáforo</th>
+          <th class="text-left font-medium text-stone-500 bg-stone-50 px-4 py-2.5">Insumo</th>
+          <th class="text-left font-medium text-stone-500 bg-stone-50 px-4 py-2.5">Sufijo / cuenta</th>
+          <th class="text-right font-medium text-stone-500 bg-stone-50 px-4 py-2.5">Stock</th>
+          <th class="text-right font-medium text-stone-500 bg-stone-50 px-4 py-2.5">CPP Bs</th>
+          <th class="text-right font-medium text-stone-500 bg-stone-50 px-4 py-2.5">Valor Bs</th>
+          <th class="text-right font-medium text-stone-500 bg-stone-50 px-4 py-2.5">Seguridad</th>
+          <th class="text-right font-medium text-stone-500 bg-stone-50 px-4 py-2.5">Reorden</th>
+          <th class="text-right font-medium text-stone-500 bg-stone-50 px-4 py-2.5">Máximo</th>
+          <th class="bg-stone-50 px-4 py-2.5"></th>
+        </tr></thead>
+        <tbody id="tbInsumos"></tbody>
+      </table>
+    </div>
+    <p class="text-xs text-stone-500">
+      Rojo: stock físico por debajo del stock de seguridad (la Gerencia General puede autorizar compra de emergencia). Amarillo: en o bajo el punto de reorden
+      (se incluye en la orden de compra semanal). Los niveles numéricos no figuran en los documentos: son parámetros editables por la Unidad de Finanzas
+      y los valores iniciales son ilustrativos. Los insumos de la línea de alimento propio (sufijos 03–07) están "No disponibles" hasta su activación en 2027.
+    </p>
+    <form id="formInsumo" data-perm="inventario.configurar" class="bg-white rounded-xl border border-stone-200 p-5 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+      <h3 class="col-span-full font-semibold">Nuevo insumo en el catálogo</h3>
+      <label>Código<input id="iCodigo" required class="mt-1 border border-stone-300 rounded-lg px-3 py-2 w-full" placeholder="Ej. MED-02"></label>
+      <label class="md:col-span-2">Nombre<input id="iNombre" required class="mt-1 border border-stone-300 rounded-lg px-3 py-2 w-full"></label>
+      <label>Categoría<select id="iCategoria" class="mt-1 border border-stone-300 rounded-lg bg-white px-3 py-2 w-full"></select></label>
+      <label>Unidad<select id="iUnidad" class="mt-1 border border-stone-300 rounded-lg bg-white px-3 py-2 w-full"></select></label>
+      <label>Sufijo MPD (Grupo 6)<select id="iSufijo" class="mt-1 border border-stone-300 rounded-lg bg-white px-3 py-2 w-full"></select></label>
+      <label>Almacén<input id="iAlmacen" class="mt-1 border border-stone-300 rounded-lg px-3 py-2 w-full"></label>
+      <label>Stock de seguridad<input id="iSeg" type="number" min="0" step="any" class="mt-1 border border-stone-300 rounded-lg px-3 py-2 w-full"></label>
+      <label>Punto de reorden<input id="iPdr" type="number" min="0" step="any" class="mt-1 border border-stone-300 rounded-lg px-3 py-2 w-full"></label>
+      <label>Stock máximo<input id="iMax" type="number" min="0" step="any" class="mt-1 border border-stone-300 rounded-lg px-3 py-2 w-full"></label>
+      <div class="flex items-end"><button class="rounded-lg px-4 py-2 text-sm font-medium bg-brand-500 hover:bg-brand-600 text-white">Agregar insumo</button></div>
+    </form>
+  </section>
+
+  <!-- ============ COMPRAS ============ -->
+  <section id="tab-compras" hidden class="space-y-4">
+    <form id="formCompra" data-perm="compras.registrar" class="bg-white rounded-xl border border-stone-200 p-5 space-y-4 text-sm">
+      <h3 class="font-semibold">Entrada por compra de insumos</h3>
+      <p class="text-xs text-stone-500">PR-FIN-03: más de Bs 1.000 exige orden de compra aprobada por la Gerencia General; más de Bs 5.000, al menos 3 cotizaciones. El vendedor debe presentar sus credenciales antes de procesar el comprobante (PET-RAU-001).</p>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <label>Fecha<input id="cFecha" type="date" required class="mt-1 border border-stone-300 rounded-lg px-3 py-2 w-full"></label>
+        <label class="md:col-span-2">Proveedor (vendedor)<select id="cProveedor" class="mt-1 border border-stone-300 rounded-lg bg-white px-3 py-2 w-full"></select></label>
+        <label>Documento<select id="cDocTipo" class="mt-1 border border-stone-300 rounded-lg bg-white px-3 py-2 w-full"><option value="RECIBO">Recibo</option><option value="FACTURA">Factura</option></select></label>
+      </div>
+      <fieldset id="boxProvNuevo" hidden class="grid grid-cols-2 md:grid-cols-4 gap-3 border border-amber-300 bg-amber-50 rounded-lg p-3">
+        <legend class="px-1 text-xs font-medium text-amber-800">Credenciales del vendedor (obligatorias)</legend>
+        <label>Nombre / Razón social<input id="pNombre" class="mt-1 border border-stone-300 rounded-lg px-3 py-2 w-full bg-white"></label>
+        <label>C.I. / NIT<input id="pDoc" class="mt-1 border border-stone-300 rounded-lg px-3 py-2 w-full bg-white"></label>
+        <label>Certificado<select id="pTipo" class="mt-1 border border-stone-300 rounded-lg bg-white px-3 py-2 w-full"><option value="RAU">Certificado RAU</option><option value="NO_IMPONIBILIDAD">Certificado de No Imponibilidad</option></select></label>
+        <label>Número del certificado<input id="pNum" class="mt-1 border border-stone-300 rounded-lg px-3 py-2 w-full bg-white"></label>
+      </fieldset>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <label>N° de factura / recibo<input id="cDocNum" required class="mt-1 border border-stone-300 rounded-lg px-3 py-2 w-full"></label>
+        <label>Orden de compra N°<input id="cOC" class="mt-1 border border-stone-300 rounded-lg px-3 py-2 w-full" placeholder="Si supera Bs 1.000"></label>
+        <label>Cotizaciones recibidas<input id="cCot" type="number" min="0" step="1" value="0" class="mt-1 border border-stone-300 rounded-lg px-3 py-2 w-full"></label>
+        <label>Condición de pago<select id="cCond" class="mt-1 border border-stone-300 rounded-lg bg-white px-3 py-2 w-full"><option value="CONTADO">Contado</option><option value="CREDITO">Crédito pactado</option></select></label>
+        <label id="lMedio">Forma de pago<select id="cMedio" class="mt-1 border border-stone-300 rounded-lg bg-white px-3 py-2 w-full"></select></label>
+        <label id="lVenc" hidden>Vencimiento pactado<input id="cVenc" type="date" class="mt-1 border border-stone-300 rounded-lg px-3 py-2 w-full"></label>
+      </div>
+      <div>
+        <table class="w-full text-sm"><thead><tr><th class="text-left text-stone-500 font-medium py-1">Insumo</th><th class="text-right text-stone-500 font-medium py-1 w-36">Cantidad</th><th class="text-right text-stone-500 font-medium py-1 w-36">Costo unit. Bs</th><th class="text-right text-stone-500 font-medium py-1 w-32">Total Bs</th><th class="w-10"></th></tr></thead>
+          <tbody id="itemsCompra"></tbody></table>
+        <div class="flex items-center justify-between mt-2">
+          <button type="button" id="btnItem" class="rounded-lg px-3 py-1.5 text-sm font-medium border border-stone-300 hover:bg-stone-100">+ Agregar insumo</button>
+          <p class="text-sm">Total de la compra: <b id="totCompra" class="num">Bs 0,00</b></p>
+        </div>
+        <p id="avisoLimites" class="text-xs text-amber-700 mt-1"></p>
+      </div>
+      <button class="rounded-lg px-4 py-2 text-sm font-medium bg-brand-500 hover:bg-brand-600 text-white">Registrar compra y dar entrada al kardex</button>
+    </form>
+
+    <div class="bg-white rounded-xl border border-stone-200 overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead><tr>
+          <th class="text-left font-medium text-stone-500 bg-stone-50 px-4 py-2.5">Fecha</th>
+          <th class="text-left font-medium text-stone-500 bg-stone-50 px-4 py-2.5">Proveedor</th>
+          <th class="text-left font-medium text-stone-500 bg-stone-50 px-4 py-2.5">Documento</th>
+          <th class="text-left font-medium text-stone-500 bg-stone-50 px-4 py-2.5">Insumos</th>
+          <th class="text-right font-medium text-stone-500 bg-stone-50 px-4 py-2.5">Total Bs</th>
+          <th class="text-left font-medium text-stone-500 bg-stone-50 px-4 py-2.5">Estado</th>
+          <th class="bg-stone-50 px-4 py-2.5"></th>
+        </tr></thead>
+        <tbody id="tbCompras"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ PROVEEDORES ============ -->
+  <section id="tab-proveedores" hidden class="space-y-4">
+    <p class="text-sm text-stone-600">Expediente de vendedores: nombre o razón social, C.I./NIT y Certificado RAU o de No Imponibilidad (PET-RAU-001, DS 24463). Sin estas credenciales no se procesa el comprobante de egreso.</p>
+    <div class="bg-white rounded-xl border border-stone-200 overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead><tr>
+          <th class="text-left font-medium text-stone-500 bg-stone-50 px-4 py-2.5">Proveedor</th>
+          <th class="text-left font-medium text-stone-500 bg-stone-50 px-4 py-2.5">C.I. / NIT</th>
+          <th class="text-left font-medium text-stone-500 bg-stone-50 px-4 py-2.5">Certificado</th>
+          <th class="text-right font-medium text-stone-500 bg-stone-50 px-4 py-2.5">Compras</th>
+          <th class="text-right font-medium text-stone-500 bg-stone-50 px-4 py-2.5">Total comprado Bs</th>
+          <th class="text-right font-medium text-stone-500 bg-stone-50 px-4 py-2.5">Por pagar Bs</th>
+          <th class="bg-stone-50 px-4 py-2.5"></th>
+        </tr></thead>
+        <tbody id="tbProv"></tbody>
+      </table>
+    </div>
+    <form id="formProv" data-perm="compras.registrar" class="bg-white rounded-xl border border-stone-200 p-5 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+      <h3 class="col-span-full font-semibold" id="tituloProv">Registrar proveedor</h3>
+      <input id="vId" type="hidden">
+      <label>Nombre / Razón social<input id="vNombre" required class="mt-1 border border-stone-300 rounded-lg px-3 py-2 w-full"></label>
+      <label>C.I. / NIT<input id="vDoc" required class="mt-1 border border-stone-300 rounded-lg px-3 py-2 w-full"></label>
+      <label>Certificado<select id="vTipo" class="mt-1 border border-stone-300 rounded-lg bg-white px-3 py-2 w-full"><option value="RAU">Certificado RAU</option><option value="NO_IMPONIBILIDAD">Certificado de No Imponibilidad</option></select></label>
+      <label>Número del certificado<input id="vNum" required class="mt-1 border border-stone-300 rounded-lg px-3 py-2 w-full"></label>
+      <label>Teléfono<input id="vTel" class="mt-1 border border-stone-300 rounded-lg px-3 py-2 w-full"></label>
+      <label class="md:col-span-2">Observaciones<input id="vObs" class="mt-1 border border-stone-300 rounded-lg px-3 py-2 w-full"></label>
+      <div class="flex items-end gap-2"><button class="rounded-lg px-4 py-2 text-sm font-medium bg-brand-500 hover:bg-brand-600 text-white">Guardar</button>
+        <button type="button" id="btnProvCancel" hidden class="rounded-lg px-3 py-2 text-sm border border-stone-300">Cancelar</button></div>
+    </form>
+  </section>
+
+  <!-- ============ KARDEX ============ -->
+  <section id="tab-kardex" hidden class="space-y-4">
+    <div class="flex flex-wrap items-end gap-3 text-sm">
+      <label>Insumo<select id="kInsumo" class="mt-1 border border-stone-300 rounded-lg bg-white px-3 py-2 min-w-64"></select></label>
+      <label>Desde<input id="kDesde" type="date" class="mt-1 border border-stone-300 rounded-lg px-3 py-2"></label>
+      <label>Hasta<input id="kHasta" type="date" class="mt-1 border border-stone-300 rounded-lg px-3 py-2"></label>
+      <button id="btnKardex" class="rounded-lg px-4 py-2 text-sm font-medium bg-brand-500 hover:bg-brand-600 text-white">Consultar</button>
+      <button id="btnKardexPdf" class="rounded-lg px-4 py-2 text-sm font-medium border border-stone-300 hover:bg-stone-100" hidden>Imprimir KV-08</button>
+    </div>
+    <div id="kOut"></div>
+  </section>
+
+  <!-- ============ CONSUMO ============ -->
+  <section id="tab-consumo" hidden class="space-y-4">
+    <form id="formConsumo" data-perm="lotes.bitacora" class="bg-white rounded-xl border border-stone-200 p-5 space-y-4 text-sm">
+      <h3 class="font-semibold">Bitácora diaria con consumo de insumos</h3>
+      <p class="text-xs text-stone-500">Cada insumo consumido sale del kardex al costo promedio vigente y se carga al lote por centro de costo y sufijo (Dr 6.1.01.0x / Cr 1.1.03.xx, MAN-01 §8.1). Se genera un asiento por bitácora.</p>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <label>Lote abierto<select id="bLote" class="mt-1 border border-stone-300 rounded-lg bg-white px-3 py-2 w-full"></select></label>
+        <label>Fecha<input id="bFecha" type="date" required class="mt-1 border border-stone-300 rounded-lg px-3 py-2 w-full"></label>
+        <label>Mortalidad (aves)<input id="bMort" type="number" min="0" step="1" value="0" class="mt-1 border border-stone-300 rounded-lg px-3 py-2 w-full"></label>
+        <label>Novedad sanitaria<input id="bNov" class="mt-1 border border-stone-300 rounded-lg px-3 py-2 w-full"></label>
+      </div>
+      <table class="w-full text-sm"><thead><tr><th class="text-left text-stone-500 font-medium py-1">Insumo consumido</th><th class="text-right text-stone-500 font-medium py-1 w-40">Cantidad</th><th class="w-10"></th></tr></thead>
+        <tbody id="itemsConsumo"></tbody></table>
+      <div class="flex items-center gap-3">
+        <button type="button" id="btnConsumoItem" class="rounded-lg px-3 py-1.5 text-sm font-medium border border-stone-300 hover:bg-stone-100">+ Agregar insumo</button>
+        <button class="rounded-lg px-4 py-2 text-sm font-medium bg-brand-500 hover:bg-brand-600 text-white">Registrar bitácora</button>
+      </div>
+      <p class="text-xs text-stone-500">El alimento balanceado en kg se toma del kardex (alimenta el ICA).</p>
+    </form>
+    <div class="bg-white rounded-xl border border-stone-200 overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead><tr>
+          <th class="text-left font-medium text-stone-500 bg-stone-50 px-4 py-2.5">Fecha</th>
+          <th class="text-left font-medium text-stone-500 bg-stone-50 px-4 py-2.5">Lote · día</th>
+          <th class="text-left font-medium text-stone-500 bg-stone-50 px-4 py-2.5">Insumo</th>
+          <th class="text-left font-medium text-stone-500 bg-stone-50 px-4 py-2.5">Sufijo</th>
+          <th class="text-right font-medium text-stone-500 bg-stone-50 px-4 py-2.5">Cantidad</th>
+          <th class="text-right font-medium text-stone-500 bg-stone-50 px-4 py-2.5">CPP Bs</th>
+          <th class="text-right font-medium text-stone-500 bg-stone-50 px-4 py-2.5">Costo Bs</th>
+          <th class="text-left font-medium text-stone-500 bg-stone-50 px-4 py-2.5">Asiento</th>
+        </tr></thead>
+        <tbody id="tbConsumos"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- diálogo de pago -->
+  <dialog id="dlgPago" class="rounded-xl p-5 w-96 backdrop:bg-black/40">
+    <form method="dialog" id="formPago" class="space-y-3 text-sm">
+      <h3 class="font-semibold">Pagar cuenta por pagar</h3>
+      <p id="pagoInfo" class="text-stone-600"></p>
+      <label class="block">Fecha de pago<input id="pgFecha" type="date" required class="mt-1 border border-stone-300 rounded-lg px-3 py-2 w-full"></label>
+      <label class="block">Forma de pago<select id="pgMedio" class="mt-1 border border-stone-300 rounded-lg bg-white px-3 py-2 w-full"></select></label>
+      <div class="flex justify-end gap-2"><button value="cancel" class="rounded-lg px-3 py-2 border border-stone-300">Cancelar</button>
+        <button id="pgOk" value="ok" class="rounded-lg px-4 py-2 bg-brand-500 text-white">Registrar pago</button></div>
+    </form>
+  </dialog>
+</main>
+
+<script src="app-common.js"></script>
+<script src="formatos.js"></script>
+<script>
+const SEM = {
+  VERDE: ['Verde', 'bg-emerald-100 text-emerald-800'], AMARILLO: ['Amarillo', 'bg-amber-100 text-amber-800'], ROJO: ['Rojo', 'bg-red-100 text-red-800'],
+  SIN_PARAMETROS: ['Sin parámetros', 'bg-stone-100 text-stone-600'], NO_DISPONIBLE: ['No disponible', 'bg-stone-200 text-stone-600'],
+};
+const semChip = (s) => chip(SEM[s]?.[0] || s, SEM[s]?.[1] || 'bg-stone-100');
+const nq = (n) => num(n, 3).replace(/,?0+$/, '').replace(/,$/, '');   // cantidades: hasta 3 decimales
+let insumos = [], proveedores = [], catalogos = null, kardexActual = null;
+const opcionesInsumo = (soloDisp = true) => '<option value="">— elegir —</option>' +
+  insumos.filter((i) => !soloDisp || i.disponible).map((i) => `<option value="${i.id}">${esc(i.codigo)} · ${esc(i.nombre)} (${esc(i.unidad)})</option>`).join('');
+
+/* ---------- pestañas ---------- */
+function irA(tab) {
+  ['insumos', 'compras', 'proveedores', 'kardex', 'consumo'].forEach((t) => ($(`#tab-${t}`).hidden = t !== tab));
+  $$('#tabs button').forEach((b) => {
+    const on = b.dataset.tab === tab;
+    b.className = 'px-4 py-2 border-b-2 whitespace-nowrap ' + (on ? 'border-brand-500 text-brand-700 font-medium' : 'border-transparent text-stone-500 hover:text-stone-800');
+  });
+}
+$$('#tabs button').forEach((b) => (b.onclick = () => irA(b.dataset.tab)));
+
+/* ---------- semáforo e insumos ---------- */
+async function cargarInsumos() {
+  const [res, lista] = await Promise.all([api('/api/inventario/resumen'), api('/api/inventario/insumos')]);
+  insumos = lista;
+  $('#resumenSem').innerHTML = [['ROJO', res.rojo], ['AMARILLO', res.amarillo], ['VERDE', res.verde], ['NO_DISPONIBLE', res.no_disponible]]
+    .map(([k, v]) => `<div class="bg-white rounded-xl border border-stone-200 p-4"><p class="text-xs uppercase tracking-wide text-stone-500">${SEM[k][0]}</p><p class="text-2xl font-semibold num">${v}</p></div>`).join('') +
+    `<div class="bg-white rounded-xl border border-stone-200 p-4"><p class="text-xs uppercase tracking-wide text-stone-500">Valor del inventario</p><p class="text-2xl font-semibold num">Bs ${bs(res.valor_inventario)}</p></div>`;
+  $('#alertas').innerHTML = res.alertas.map((a) =>
+    `<div class="rounded-xl border px-4 py-3 text-sm ${a.semaforo === 'ROJO' ? 'border-red-300 bg-red-50 text-red-800' : 'border-amber-300 bg-amber-50 text-amber-800'}">
+       <b>${a.semaforo === 'ROJO' ? '● ROJO' : '● AMARILLO'} · ${esc(a.nombre)}</b> — ${nq(a.cantidad_actual)} ${esc(a.unidad)}. ${esc(a.mensaje)}</div>`).join('');
+  const edita = can('inventario.configurar');
+  $('#tbInsumos').innerHTML = lista.map((i) => `<tr data-id="${i.id}">
+    <td class="${TD}" title="${esc(i.semaforo_mensaje)}">${semChip(i.semaforo)}</td>
+    <td class="${TD}"><b>${esc(i.codigo)}</b> ${esc(i.nombre)}<br><span class="text-xs text-stone-500">${esc(i.categoria)} · ${esc(i.almacen || '')}</span></td>
+    <td class="${TD} text-xs">Suf. ${esc(i.sufijo)} ${i.sufijo_activo ? '' : '<span class="text-stone-400">(inactivo)</span>'}<br>${esc(i.cuenta_inventario)}</td>
+    <td class="${TD} text-right num">${nq(i.cantidad_actual)} ${esc(i.unidad)}</td>
+    <td class="${TD} text-right num">${num(i.costo_promedio, 4)}</td>
+    <td class="${TD} text-right num">${bs(i.valor_actual)}</td>
+    <td class="${TD} text-right">${edita ? `<input data-k="stock_seguridad" type="number" min="0" step="any" value="${i.stock_seguridad}" class="w-20 border border-stone-300 rounded px-1 py-0.5 text-right">` : nq(i.stock_seguridad)}</td>
+    <td class="${TD} text-right">${edita ? `<input data-k="punto_reorden" type="number" min="0" step="any" value="${i.punto_reorden}" class="w-20 border border-stone-300 rounded px-1 py-0.5 text-right">` : nq(i.punto_reorden)}</td>
+    <td class="${TD} text-right">${edita ? `<input data-k="stock_maximo" type="number" min="0" step="any" value="${i.stock_maximo ?? ''}" class="w-20 border border-stone-300 rounded px-1 py-0.5 text-right">` : (i.stock_maximo == null ? '' : nq(i.stock_maximo))}</td>
+    <td class="${TD}">${edita ? `<button data-guardar="${i.id}" class="${BTN_S}">Guardar</button>` : ''}<button data-kardex="${i.id}" class="${BTN_S}">Kardex</button></td></tr>`).join('');
+  $$('[data-guardar]').forEach((b) => (b.onclick = intentar(async () => {
+    const tr = b.closest('tr'), v = (k) => tr.querySelector(`[data-k=${k}]`).value;
+    await post(`/api/inventario/insumos/${b.dataset.guardar}/parametros`, { stock_seguridad: Number(v('stock_seguridad')), punto_reorden: Number(v('punto_reorden')), stock_maximo: v('stock_maximo') === '' ? null : Number(v('stock_maximo')) });
+    aviso('Parámetros de reorden actualizados.'); await cargarInsumos();
+  })));
+  $$('[data-kardex]').forEach((b) => (b.onclick = () => { irA('kardex'); $('#kInsumo').value = b.dataset.kardex; consultarKardex().catch((e) => aviso(e.message, true)); }));
+  const sel = $('#kInsumo').value;
+  $('#kInsumo').innerHTML = opcionesInsumo(false); if (sel) $('#kInsumo').value = sel;
+  $$('#itemsCompra select').forEach((s) => { const v = s.value; s.innerHTML = opcionesInsumo(); s.value = v; });
+  $$('#itemsConsumo select').forEach((s) => { const v = s.value; s.innerHTML = opcionesInsumo(); s.value = v; });
+}
+$('#formInsumo').onsubmit = intentar(async (e) => {
+  e.preventDefault();
+  await post('/api/inventario/insumos', { codigo: $('#iCodigo').value, nombre: $('#iNombre').value, categoria: $('#iCategoria').value, unidad: $('#iUnidad').value,
+    sufijo: $('#iSufijo').value, almacen: $('#iAlmacen').value, stock_seguridad: $('#iSeg').value, punto_reorden: $('#iPdr').value, stock_maximo: $('#iMax').value });
+  e.target.reset(); aviso('Insumo agregado al catálogo.'); await cargarInsumos();
+});
+
+/* ---------- compras ---------- */
+function filaCompra() {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td class="py-1 pr-2"><select class="it-ins border border-stone-300 rounded-lg bg-white px-2 py-1.5 w-full">${opcionesInsumo()}</select></td>
+    <td class="py-1 pr-2"><input class="it-cant border border-stone-300 rounded-lg px-2 py-1.5 w-full text-right" type="number" min="0" step="any"></td>
+    <td class="py-1 pr-2"><input class="it-cu border border-stone-300 rounded-lg px-2 py-1.5 w-full text-right" type="number" min="0" step="any"></td>
+    <td class="py-1 pr-2 text-right num it-tot">0,00</td><td><button type="button" class="text-stone-400 hover:text-red-600" title="Quitar">✕</button></td>`;
+  tr.querySelector('button').onclick = () => { tr.remove(); recalcCompra(); };
+  tr.addEventListener('input', recalcCompra);
+  $('#itemsCompra').appendChild(tr);
+}
+function totalCompra() {
+  let t = 0;
+  $$('#itemsCompra tr').forEach((tr) => {
+    const s = Math.round((Number(tr.querySelector('.it-cant').value) || 0) * (Number(tr.querySelector('.it-cu').value) || 0) * 100) / 100;
+    tr.querySelector('.it-tot').textContent = bs(s); t += s;
+  });
+  return Math.round(t * 100) / 100;
+}
+function recalcCompra() {
+  const t = totalCompra(), av = [];
+  $('#totCompra').textContent = 'Bs ' + bs(t);
+  if (t > catalogos.limites.aprobacion_gg) av.push(`Supera Bs ${bs(catalogos.limites.aprobacion_gg)}: requiere orden de compra aprobada por la Gerencia General.`);
+  if (t > catalogos.limites.cotizaciones) av.push(`Supera Bs ${bs(catalogos.limites.cotizaciones)}: requiere al menos ${catalogos.limites.min_cotizaciones} cotizaciones.`);
+  $('#avisoLimites').textContent = av.join(' ');
+}
+const ajustarCond = () => { const c = $('#cCond').value === 'CREDITO'; $('#lMedio').hidden = c; $('#lVenc').hidden = !c; };
+$('#cCond').onchange = ajustarCond;
+$('#cProveedor').onchange = () => ($('#boxProvNuevo').hidden = $('#cProveedor').value !== 'NUEVO');
+$('#btnItem').onclick = filaCompra;
+$('#formCompra').onsubmit = intentar(async (e) => {
+  e.preventDefault();
+  const items = $$('#itemsCompra tr').map((tr) => ({ insumo_id: Number(tr.querySelector('.it-ins').value), cantidad: tr.querySelector('.it-cant').value, costo_unitario: tr.querySelector('.it-cu').value }));
+  const cuerpo = { fecha: $('#cFecha').value, documento_tipo: $('#cDocTipo').value, documento_numero: $('#cDocNum').value, orden_compra: $('#cOC').value,
+    cotizaciones: Number($('#cCot').value) || 0, condicion: $('#cCond').value, items };
+  if ($('#cProveedor').value === 'NUEVO') cuerpo.proveedor = { nombre: $('#pNombre').value, documento_identidad: $('#pDoc').value, tipo_certificado: $('#pTipo').value, numero_certificado: $('#pNum').value };
+  else if ($('#cProveedor').value) cuerpo.proveedor_id = Number($('#cProveedor').value);
+  if (cuerpo.condicion === 'CONTADO') cuerpo.medio_pago = $('#cMedio').value; else cuerpo.fecha_vencimiento = $('#cVenc').value;
+  const r = await post('/api/inventario/compras', cuerpo);
+  aviso(`Compra registrada por Bs ${bs(r.total)} · asiento Nº ${r.asiento_numero}` + r.movimientos.map((m) => ` · ${m.insumo}: stock ${nq(m.nuevo_stock)}, nuevo CPP ${num(m.nuevo_cpp, 4)}`).join(''));
+  e.target.reset(); $('#itemsCompra').innerHTML = ''; filaCompra(); $('#cFecha').value = hoy(); $('#boxProvNuevo').hidden = true; ajustarCond(); recalcCompra();
+  await Promise.all([cargarInsumos(), cargarCompras(), cargarProveedores()]);
+});
+async function cargarCompras() {
+  const lista = await api('/api/inventario/compras');
+  $('#tbCompras').innerHTML = lista.map((c) => `<tr>
+    <td class="${TD}">${esc(c.fecha)}</td>
+    <td class="${TD}">${esc(c.proveedor)}<br><span class="text-xs text-stone-500">${esc(c.documento_identidad)} · ${c.tipo_certificado === 'RAU' ? 'RAU' : 'No imponib.'} ${esc(c.numero_certificado)}</span></td>
+    <td class="${TD}">${esc(c.documento_tipo)} ${esc(c.documento_numero)}<br><span class="text-xs text-stone-500">${c.orden_compra ? 'OC ' + esc(c.orden_compra) : ''}${c.cotizaciones ? ' · ' + c.cotizaciones + ' cotiz.' : ''}</span></td>
+    <td class="${TD} text-xs">${c.items.map((i) => `${esc(i.nombre)}: ${nq(i.cantidad)} ${esc(i.unidad)} × ${num(i.costo_unitario, 4)}`).join('<br>')}</td>
+    <td class="${TD} text-right num">${bs(c.total)}</td>
+    <td class="${TD}">${c.estado === 'PAGADA' ? chip('Pagada', 'bg-emerald-100 text-emerald-800') : chip(c.vencida ? 'Vencida' : 'Por pagar', c.vencida ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800')}
+      ${c.estado === 'PENDIENTE' ? `<br><span class="text-xs text-stone-500">vence ${esc(c.fecha_vencimiento)}</span>` : ''}</td>
+    <td class="${TD} whitespace-nowrap">
+      ${c.estado === 'PENDIENTE' && can('compras.registrar') ? `<button data-pagar="${c.id}" data-info="${esc(c.proveedor)} · ${esc(c.documento_tipo)} ${esc(c.documento_numero)} · Bs ${bs(c.total)}" class="${BTN_P}">Pagar</button>` : ''}
+      <button data-ct="${c.asiento_id}" class="${BTN_S}">Imprimir CT-03</button>
+      ${c.asiento_pago_id || c.condicion === 'CONTADO' ? `<button data-ce="${c.asiento_pago_id || c.asiento_id}" class="${BTN_S}">Imprimir CE-02</button>` : ''}</td></tr>`).join('') ||
+    `<tr><td class="${TD} text-stone-500" colspan="7">Aún no hay compras registradas.</td></tr>`;
+  $$('[data-pagar]').forEach((b) => (b.onclick = () => { $('#pagoInfo').textContent = b.dataset.info; $('#dlgPago').dataset.id = b.dataset.pagar; $('#pgFecha').value = hoy(); $('#dlgPago').showModal(); }));
+  $$('[data-ct]').forEach((b) => (b.onclick = intentar(() => Formatos.comprobante((r) => api(r), b.dataset.ct, 'CT-03'))));
+  $$('[data-ce]').forEach((b) => (b.onclick = intentar(() => Formatos.comprobante((r) => api(r), b.dataset.ce, 'CE-02'))));
+}
+$('#formPago').onsubmit = intentar(async (e) => {
+  if (e.submitter?.value !== 'ok') return;
+  const r = await post(`/api/inventario/compras/${$('#dlgPago').dataset.id}/pagar`, { fecha: $('#pgFecha').value, medio_pago: $('#pgMedio').value });
+  aviso(`${r.mensaje} · asiento Nº ${r.asiento_numero}` + (r.pagada_con_retraso ? ' · pagada después del vencimiento' : ''));
+  await Promise.all([cargarCompras(), cargarProveedores()]);
+});
+
+/* ---------- proveedores ---------- */
+async function cargarProveedores() {
+  proveedores = await api('/api/inventario/proveedores');
+  const sel = $('#cProveedor').value;
+  $('#cProveedor').innerHTML = '<option value="">— elegir proveedor —</option>' + proveedores.filter((p) => p.activo).map((p) => `<option value="${p.id}">${esc(p.nombre)} · ${esc(p.documento_identidad)}</option>`).join('') +
+    (can('compras.registrar') ? '<option value="NUEVO">+ Proveedor nuevo (registrar credenciales)</option>' : '');
+  if (sel) $('#cProveedor').value = sel;
+  $('#tbProv').innerHTML = proveedores.map((p) => `<tr>
+    <td class="${TD}">${esc(p.nombre)}</td><td class="${TD}">${esc(p.documento_identidad)}</td>
+    <td class="${TD}">${p.tipo_certificado === 'RAU' ? 'Certificado RAU' : 'Cert. No Imponibilidad'} · ${esc(p.numero_certificado)}</td>
+    <td class="${TD} text-right num">${p.compras}</td><td class="${TD} text-right num">${bs(p.total_comprado)}</td><td class="${TD} text-right num">${bs(p.por_pagar)}</td>
+    <td class="${TD} whitespace-nowrap"><button data-ec="${p.id}" class="${BTN_S}">Estado de cuenta EC-07</button>
+      ${can('compras.registrar') ? `<button data-editp="${p.id}" class="${BTN_S}">Editar</button>` : ''}</td></tr>`).join('') ||
+    `<tr><td class="${TD} text-stone-500" colspan="7">Sin proveedores registrados.</td></tr>`;
+  $$('[data-ec]').forEach((b) => (b.onclick = intentar(async () => Formatos.imprimir(Formatos.htmlEstadoCuenta(await api(`/api/formatos/estado-cuenta?tipo=proveedor&id=${b.dataset.ec}`))))));
+  $$('[data-editp]').forEach((b) => (b.onclick = () => {
+    const p = proveedores.find((x) => x.id === Number(b.dataset.editp));
+    $('#vId').value = p.id; $('#vNombre').value = p.nombre; $('#vDoc').value = p.documento_identidad; $('#vTipo').value = p.tipo_certificado;
+    $('#vNum').value = p.numero_certificado; $('#vTel').value = p.telefono || ''; $('#vObs').value = p.observaciones || '';
+    $('#tituloProv').textContent = 'Editar proveedor'; $('#btnProvCancel').hidden = false; $('#formProv').scrollIntoView();
+  }));
+}
+const limpiarProv = () => { $('#formProv').reset(); $('#vId').value = ''; $('#tituloProv').textContent = 'Registrar proveedor'; $('#btnProvCancel').hidden = true; };
+$('#btnProvCancel').onclick = limpiarProv;
+$('#formProv').onsubmit = intentar(async (e) => {
+  e.preventDefault();
+  const cuerpo = { nombre: $('#vNombre').value, documento_identidad: $('#vDoc').value, tipo_certificado: $('#vTipo').value, numero_certificado: $('#vNum').value, telefono: $('#vTel').value, observaciones: $('#vObs').value };
+  await post($('#vId').value ? `/api/inventario/proveedores/${$('#vId').value}` : '/api/inventario/proveedores', cuerpo);
+  aviso('Expediente del proveedor guardado.'); limpiarProv(); await cargarProveedores();
+});
+
+/* ---------- kardex ---------- */
+async function consultarKardex() {
+  const id = $('#kInsumo').value;
+  if (!id) throw new Error('Elija un insumo');
+  const q = new URLSearchParams(); if ($('#kDesde').value) q.set('desde', $('#kDesde').value); if ($('#kHasta').value) q.set('hasta', $('#kHasta').value);
+  const k = kardexActual = await api(`/api/inventario/kardex/${id}${q.toString() ? '?' + q : ''}`);
+  const i = k.insumo, sa = k.saldo_anterior;
+  $('#btnKardexPdf').hidden = false;
+  $('#kOut').innerHTML = `<div class="bg-white rounded-xl border border-stone-200 overflow-x-auto">
+    <p class="px-4 pt-3 text-sm"><b>${esc(k.formato)}</b> · ${esc(i.codigo)} ${esc(i.nombre)} · ${esc(i.unidad)} · ${esc(i.almacen || '')} · ${esc(k.metodo_valuacion)} · stock mín. ${nq(i.stock_minimo)} · máx. ${i.stock_maximo == null ? '—' : nq(i.stock_maximo)} · ${semChip(i.semaforo)}</p>
+    <table class="w-full text-sm mt-2"><thead>
+      <tr><th class="${TH}" rowspan="2">Fecha</th><th class="${TH}" rowspan="2">N° doc.</th><th class="${TH}" rowspan="2">Detalle</th><th class="${TH} text-center" colspan="3">Entradas</th><th class="${TH} text-center" colspan="3">Salidas</th><th class="${TH} text-center" colspan="3">Saldo</th></tr>
+      <tr>${['Cant.', 'P. unit.', 'Total Bs', 'Cant.', 'P. unit.', 'Total Bs', 'Cant.', 'Costo unit.', 'Total Bs'].map((h) => `<th class="${TH} text-right">${h}</th>`).join('')}</tr></thead>
+    <tbody>
+      <tr class="bg-stone-50 font-medium"><td class="${TD}" colspan="3">Saldo inicial</td><td class="${TD}" colspan="6"></td><td class="${TD} text-right num">${nq(sa.cantidad)}</td><td class="${TD} text-right num">${num(sa.costo_unitario, 4)}</td><td class="${TD} text-right num">${bs(sa.total)}</td></tr>
+      ${k.movimientos.map((m) => { const e = m.tipo === 'ENTRADA_COMPRA'; return `<tr><td class="${TD}">${esc(m.fecha)}</td><td class="${TD}">${esc(m.documento || '')}${m.asiento_numero ? `<br><button data-asi="${m.asiento_id}" class="text-xs text-brand-700 underline">asiento ${m.asiento_numero}</button>` : ''}</td><td class="${TD}">${esc(m.detalle || '')}</td>
+        <td class="${TD} text-right num">${e ? nq(m.cantidad) : ''}</td><td class="${TD} text-right num">${e ? num(m.costo_unitario, 4) : ''}</td><td class="${TD} text-right num">${e ? bs(m.total) : ''}</td>
+        <td class="${TD} text-right num">${e ? '' : nq(m.cantidad)}</td><td class="${TD} text-right num">${e ? '' : num(m.costo_unitario, 4)}</td><td class="${TD} text-right num">${e ? '' : bs(m.total)}</td>
+        <td class="${TD} text-right num">${nq(m.saldo_cantidad)}</td><td class="${TD} text-right num">${num(m.saldo_costo_unit, 4)}</td><td class="${TD} text-right num">${bs(m.saldo_total)}</td></tr>`; }).join('') ||
+        `<tr><td class="${TD} text-stone-500" colspan="12">Sin movimientos en el período.</td></tr>`}
+      <tr class="bg-stone-50 font-medium"><td class="${TD}" colspan="3">Sumas</td><td class="${TD} text-right num">${nq(k.sumas.entradas_cantidad)}</td><td class="${TD}"></td><td class="${TD} text-right num">${bs(k.sumas.entradas_total)}</td>
+        <td class="${TD} text-right num">${nq(k.sumas.salidas_cantidad)}</td><td class="${TD}"></td><td class="${TD} text-right num">${bs(k.sumas.salidas_total)}</td>
+        <td class="${TD} text-right num">${nq(i.cantidad_actual)}</td><td class="${TD} text-right num">${num(i.costo_promedio, 4)}</td><td class="${TD} text-right num">${bs(i.valor_actual)}</td></tr>
+    </tbody></table></div>`;
+  $$('#kOut [data-asi]').forEach((b) => (b.onclick = intentar(() => Formatos.comprobante((r) => api(r), b.dataset.asi))));
+}
+$('#btnKardex').onclick = intentar(consultarKardex);
+$('#btnKardexPdf').onclick = () => kardexActual && Formatos.imprimir(Formatos.htmlKardex(kardexActual));
+
+/* ---------- consumo en bitácora ---------- */
+function filaConsumo() {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td class="py-1 pr-2"><select class="co-ins border border-stone-300 rounded-lg bg-white px-2 py-1.5 w-full">${opcionesInsumo()}</select></td>
+    <td class="py-1 pr-2"><input class="co-cant border border-stone-300 rounded-lg px-2 py-1.5 w-full text-right" type="number" min="0" step="any"></td>
+    <td><button type="button" class="text-stone-400 hover:text-red-600" title="Quitar">✕</button></td>`;
+  tr.querySelector('button').onclick = () => tr.remove();
+  $('#itemsConsumo').appendChild(tr);
+}
+$('#btnConsumoItem').onclick = filaConsumo;
+$('#formConsumo').onsubmit = intentar(async (e) => {
+  e.preventDefault();
+  if (!$('#bLote').value) throw new Error('No hay un lote abierto');
+  const consumos = $$('#itemsConsumo tr').map((tr) => ({ insumo_id: Number(tr.querySelector('.co-ins').value), cantidad: tr.querySelector('.co-cant').value }));
+  const r = await post(`/api/inventario/lotes/${$('#bLote').value}/bitacora`, { fecha: $('#bFecha').value, mortalidad: $('#bMort').value, novedad_sanitaria: $('#bNov').value, consumos });
+  aviso(`Bitácora del día ${r.dia_ciclo} registrada` + (r.asiento_numero ? ` · consumo Bs ${bs(r.costo_total_consumo)} · asiento Nº ${r.asiento_numero}` : '') + (r.alertas.length ? ' · ' + r.alertas.map((a) => `${a.semaforo}: ${a.insumo}`).join(', ') : ''));
+  $('#itemsConsumo').innerHTML = ''; filaConsumo(); $('#bMort').value = 0; $('#bNov').value = '';
+  await Promise.all([cargarInsumos(), cargarConsumos()]);
+});
+async function cargarConsumos() {
+  const lista = await api('/api/inventario/consumos');
+  $('#tbConsumos').innerHTML = lista.map((c) => `<tr><td class="${TD}">${esc(c.fecha)}</td><td class="${TD}">${esc(c.lote)} · día ${c.dia_ciclo}</td><td class="${TD}">${esc(c.insumo)}</td><td class="${TD}">${esc(c.sufijo)}</td>
+    <td class="${TD} text-right num">${nq(c.cantidad)} ${esc(c.unidad)}</td><td class="${TD} text-right num">${num(c.costo_unitario, 4)}</td><td class="${TD} text-right num">${bs(c.total)}</td>
+    <td class="${TD}">${c.asiento_id ? `<button data-asi="${c.asiento_id}" class="text-brand-700 underline">Nº ${c.asiento_numero}</button>` : ''}</td></tr>`).join('') ||
+    `<tr><td class="${TD} text-stone-500" colspan="8">Aún no hay consumos registrados desde la bitácora.</td></tr>`;
+  $$('#tbConsumos [data-asi]').forEach((b) => (b.onclick = intentar(() => Formatos.comprobante((r) => api(r), b.dataset.asi))));
+}
+async function cargarLotes() {
+  const lotes = (await api('/api/lotes')).filter((l) => l.estado === 'ABIERTO');
+  $('#bLote').innerHTML = lotes.map((l) => `<option value="${l.id}">${esc(l.codigo)} · día ${l.dia_actual} de 73</option>`).join('') || '<option value="">(sin lotes abiertos)</option>';
+}
+
+iniciarPagina('kardex', async () => {
+  catalogos = await api('/api/inventario/catalogos');
+  const op = (a) => a.map((x) => `<option>${esc(x)}</option>`).join('');
+  $('#iCategoria').innerHTML = op(catalogos.categorias); $('#iUnidad').innerHTML = op(catalogos.unidades);
+  $('#iSufijo').innerHTML = catalogos.sufijos.filter((s) => s.cuentas_propuestas).map((s) => `<option value="${esc(s.codigo)}">${esc(s.codigo)} · ${esc(s.nombre)}${s.activo ? '' : ' (inactivo)'}</option>`).join('');
+  const medios = catalogos.medios_egreso.map((m) => `<option value="${m}">${m.charAt(0) + m.slice(1).toLowerCase()}</option>`).join('');
+  $('#cMedio').innerHTML = medios; $('#pgMedio').innerHTML = medios;
+  $('#cFecha').value = hoy(); $('#bFecha').value = hoy();
+  await Promise.all([cargarInsumos(), cargarProveedores()]);
+  const tareas = [];
+  if (can('inventario.ver')) tareas.push(cargarCompras(), cargarConsumos());
+  if (can('lotes.bitacora')) tareas.push(cargarLotes());
+  await Promise.all(tareas);
+  if (!$('#itemsCompra').children.length) filaCompra();
+  if (!$('#itemsConsumo').children.length) filaConsumo();
+  ajustarCond(); recalcCompra();
+  $('#tabs [data-tab=compras]').hidden = !can('inventario.ver');
+  irA($('#tabs [data-tab].border-brand-500')?.dataset.tab || (can('lotes.bitacora') && !can('compras.registrar') ? 'consumo' : 'insumos'));
+}).catch((e) => aviso(e.message, true));
+</script>
+</body>
+</html>
